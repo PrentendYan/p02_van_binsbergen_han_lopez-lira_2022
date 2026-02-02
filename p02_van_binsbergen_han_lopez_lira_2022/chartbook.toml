@@ -1,0 +1,89 @@
+[config]
+type = "pipeline"
+chartbook_format_version = "0.0.2"
+
+[site]
+title = "Man vs. Machine Learning"
+author = "Dong Yan, Yilong Lin"
+copyright = "2025"
+logo_path = ""
+favicon_path = ""
+
+[pipeline]
+id = "P0"
+pipeline_name = "Man vs. Machine Learning"
+pipeline_description = "Replication of van Binsbergen, Han, and Lopez-Lira (2022)"
+lead_pipeline_developer = "Dong Yan, Yilong Lin"
+contributors = ["Dong Yan, Yilong Lin"]
+software_modules_command = "module load anaconda3/3.11.4 TeXLive/2023"
+runs_on_grid_or_windows_or_other = "Windows/Linux/MacOS"
+git_repo_URL = ""
+README_file_path = "./README.md"
+
+[notebooks]
+
+
+[notebooks.01_example_notebook_interactive]
+notebook_name = "Example Notebook Interactive"
+notebook_description = "Example notebook for demonstrating how to construct a Chartbook notebook."
+notebook_path = "_output/01_example_notebook_interactive.ipynb"
+
+
+[notebooks.02_example_with_dependencies]
+notebook_name = "Example Notebook with Dependencies"
+notebook_description = "Example notebook demonstrating dependencies on data pulls."
+notebook_path = "_output/02_example_with_dependencies.ipynb"
+
+
+
+[notebooks.03_public_repo_summary_charts]
+notebook_name = "Public Repo Summary Charts"
+notebook_description = "Summary charts using public repo data."
+notebook_path = "_output/03_public_repo_summary_charts.ipynb"
+
+
+
+[dataframes]
+
+
+[dataframes.repo_public]
+dataframe_name = "Public Repo Data"
+short_description_df = "Public repo series and related economic and financial aggregates."
+data_sources = ["FRED", "Office of Financial Research"]
+data_providers = ["FRED", "Office of Financial Research"]
+links_to_data_providers = ["https://fred.stlouisfed.org/", "https://www.financialresearch.gov/short-term-funding-monitor/api/"]
+topic_tags = ["Short Term Funding", "Repo"]
+type_of_data_access = "Public"
+data_license = "No"
+license_expiration_date = "N/A"
+need_to_contact_provider = "No"
+provider_contact_info = ""
+restriction_on_use = "No"
+how_is_pulled = "Web API via Python"
+path_to_parquet_data = "./_data/repo_public.parquet"
+path_to_excel_data = "./_data/repo_public.xlsx"
+date_col = "date"
+dataframe_docs_path = "./docs_src/dataframes/repo_public.md"
+
+
+[charts]
+
+
+[charts.repo_rates]
+chart_name = "Repo Rates"
+short_description_chart = "SOFR, the Effective Funds Rate, and the Fed's Target Range"
+dataframe_id = "repo_public"
+topic_tags = ["Short Term Funding", "Repo"]
+data_series_start_date = "2/29/2012"
+data_frequency = "Daily"
+observation_period = "Weekday"
+lag_in_data_release = "One day"
+data_release_dates = "Weekday"
+seasonal_adjustment = "None"
+units = "Percent"
+data_series = ""
+mnemonic = ""
+path_to_html_chart = "./_output/repo_rates.html"
+path_to_excel_chart = "./src/repo_rates.xlsx"
+chart_docs_path = "./docs_src/charts/repo_rates.md"
+

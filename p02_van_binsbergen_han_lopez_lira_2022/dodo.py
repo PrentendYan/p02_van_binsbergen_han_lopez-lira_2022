@@ -84,6 +84,7 @@ def task_config():
 
 def task_pull():
     """Pull WRDS data only"""
+    # 1) CRSP → crsp_m.parquet（under DATA_DIR/WRDS ）
     yield {
         "name": "crsp_stock",
         "doc": "Pull CRSP stock data from WRDS",
@@ -91,28 +92,62 @@ def task_pull():
             "ipython ./src/settings.py",
             "ipython ./src/pull_CRSP_stock.py",
         ],
-        "targets": [
-            DATA_DIR / "CRSP_MSF_INDEX_INPUTS.parquet",
-            DATA_DIR / "CRSP_MSIX.parquet",
-        ],
+        "targets": [DATA_DIR / "WRDS" / "crsp_m.parquet"],
         "file_dep": ["./src/settings.py", "./src/pull_CRSP_stock.py"],
         "clean": [],
     }
+
+    # 2) Compustat + ccm → compa, comp_quarterly, ccm
     yield {
         "name": "crsp_compustat",
-        "doc": "Pull Compustat + CRSP link data from WRDS",
+        "doc": "Pull CRSP-Compustat link and Compustat annual/quarterly from WRDS",
         "actions": [
             "ipython ./src/settings.py",
             "ipython ./src/pull_CRSP_Compustat.py",
         ],
         "targets": [
-            DATA_DIR / "Compustat.parquet",
-            DATA_DIR / "CRSP_stock_ciz.parquet",
-            DATA_DIR / "CRSP_Comp_Link_Table.parquet",
-            DATA_DIR / "FF_FACTORS.parquet",
+            DATA_DIR / "compa.parquet",
+            DATA_DIR / "comp_quarterly.parquet",
+            DATA_DIR / "ccm.parquet",
         ],
         "file_dep": ["./src/settings.py", "./src/pull_CRSP_Compustat.py"],
         "clean": [],
     }
 
+    # 3) IBES EPS forecast/actual + CRSP-IBES link (dependent on crsp_m)
+    yield {
+        "name": "pull_eps",
+        "doc": "Pull IBES EPS forecast/actual and CRSP-IBES link from WRDS",
+        "actions": ["ipython ./src/settings.py", "ipython ./src/pull_eps.py"],
+        "targets": [
+            DATA_DIR / "Forecast_EPS_summary_unadjusted_1986_2019.parquet",
+            DATA_DIR / "Actual_EPS_summary_unadjusted_1986_2019.parquet",
+            DATA_DIR / "crsp_ibes_link.parquet",
+            DATA_DIR / "crsp_ibes_linked.parquet",
+        ],
+        "file_dep": [
+            "./src/settings.py",
+            "./src/pull_eps.py",
+            str(DATA_DIR / "WRDS" / "crsp_m.parquet"),
+        ],
+        "clean": [],
+    }
 
+    # 4) Fama-French factors → FF_FACTORS.parquet
+    yield {
+        "name": "pull_ff",
+        "doc": "Pull Fama-French factors from WRDS",
+        "actions": ["ipython ./src/settings.py", "ipython ./src/pull_ff.py"],
+        "targets": [DATA_DIR / "FF_FACTORS.parquet"],
+        "file_dep": ["./src/settings.py", "./src/pull_ff.py"],
+        "clean": [],
+    }
+    # 5) fred data → fred.parquet
+    yield {
+        "name": "pull_fred",
+        "doc": "Pull fred data from FRED",
+        "actions": ["ipython ./src/settings.py", "ipython ./src/pull_fred.py"],
+        "targets": [DATA_DIR / "fred.parquet"],
+        "file_dep": ["./src/settings.py", "./src/pull_fred.py"],
+        "clean": [],
+    }

@@ -2,13 +2,14 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pandas_datareader.data as web
+from fredapi import Fred
 
 from settings import config
 
 DATA_DIR = Path(config("DATA_DIR"))
 START_DATE = config("START_DATE")
 END_DATE = config("END_DATE")
+FRED_API_KEY = config("FRED_API_KEY")
 
 
 series_to_pull = {
@@ -81,56 +82,60 @@ manual_ONRRP_cntypty_limits = {  # in $ Billions
 
 
 def pull_fred(start_date=START_DATE, end_date=END_DATE, ffill=True):
-    """
-    Lookup series code, e.g., like this:
-    https://fred.stlouisfed.org/series/RPONTSYD
-    """
-    df = web.DataReader(list(series_to_pull.keys()), "fred", start_date, end_date)
+    
 
-    millions_to_billions = ["TREAST", "GFDEBTN", "WALCL", "WSDONTL"]
-    for s in millions_to_billions:
-        df[s] = df[s] / 1_000
+    fred = Fred(api_key=FRED_API_KEY)
+    
+    # 1. Real consumption
+    pce = fred.get_series("PCEC96", observation_start=start_date, observation_end=end_date)
 
-    # forward_fill = ['DISCOUNT', 'OBFR', 'DPCREDIT', 'TREAST', 'TOTRESNS']
-    if ffill:
-        forward_fill = [
-            "OBFR",
-            "DPCREDIT",
-            "TREAST",
-            "TOTRESNS",
-            "WTREGEN",
-            "WALCL",
-            "CURRCIR",
-            "RRPONTSYAWARD",
-            "WSDONTL",
-        ]
-        for s in forward_fill:
-            df[s] = df[s].ffill()
+    # 2. Real GDP
+    gdp = fred.get_series("GDPC1", observation_start=start_date, observation_end=end_date)
 
-    # fill_zeros = ['RRPONTSYD', 'RPONTSYD']
-    # for s in fill_zeros:
-    #     df[s] = df[s].fillna(0)
+    # 3. Industrial production
+    indpro = fred.get_series("INDPRO", observation_start=start_date, observation_end=end_date)
 
-    # When IORB is missing, use excess reserve rate
-    df["Gen_IORB"] = df["IORB"].fillna(df["IOER"])
-    # df['Gen_DISCOUNT'] = df['DPCREDIT'].fillna(df['DISCOUNT'])
+    # 4. Unemployment rate
+    unrate = fred.get_series("UNRATE", observation_start=start_date, observation_end=end_date)
+    
+    def log_growth(x, periods=1):
+        return np.log(x).diff(periods)
 
-    df["ONRRP_CTPY_LIMIT"] = np.nan
-    for key in manual_ONRRP_cntypty_limits.keys():
-        date = pd.to_datetime(key)
-        df.loc[date, "ONRRP_CTPY_LIMIT"] = manual_ONRRP_cntypty_limits[key]
-    df["ONRRP_CTPY_LIMIT"] = df["ONRRP_CTPY_LIMIT"].ffill()
+    macro = pd.DataFrame({
+        "consumption_growth": log_growth(pce),
+        "gdp_growth": log_growth(gdp),
+        "indpro_growth": log_growth(indpro),
+        "unemployment_rate": unrate
+    })
+    
+    return macro
 
-    df["ONRP_AGG_LIMIT"] = np.nan
-    df.loc["2021-Jul-28", "ONRP_AGG_LIMIT"] = 500
-    df["ONRP_AGG_LIMIT"] = df["ONRP_AGG_LIMIT"].ffill()
+def pull_fred_vintage():
+    gdp_2008_vintage = fred.get_series(
+        "GDPC1",
+        observation_start="2005-01-01",
+        observation_end="2010-12-31",
+        vintage_dates="2008-09-30"
+    )
 
-    df_focused = df.drop(columns=["IORR", "IOER", "IORB"])
-    # df_focused.isna().sum()
-    # df_focused['WTREGEN'].plot()
-    # df_focused['WTREGEN'].ffill().plot()
-    return df_focused
+    vintages = ["2007-12-31", "2008-09-30", "2009-06-30"]
 
+    gdp_vintage_panel = pd.concat(
+        {
+            v: fred.get_series(
+                "GDPC1",
+                observation_start="2005-01-01",
+                observation_end="2010-12-31",
+                vintage_dates=v
+            )
+            for v in vintages
+        },
+        axis=1
+    )
+    
+    gdp_vintage_panel.columns.name = "vintage_date"
+    
+    return gdp_vintage_panel
 
 def load_fred(data_dir=DATA_DIR):
     """
@@ -143,10 +148,6 @@ def load_fred(data_dir=DATA_DIR):
     return df
 
 
-def demo():
-    df = load_fred()
-
-
 if __name__ == "__main__":
     today = pd.Timestamp.today().strftime("%Y-%m-%d")
     end_date = today
@@ -154,4 +155,3 @@ if __name__ == "__main__":
     filedir = Path(DATA_DIR)
     filedir.mkdir(parents=True, exist_ok=True)
     df.to_parquet(filedir / "fred.parquet")
-    df.to_csv(filedir / "fred.csv")

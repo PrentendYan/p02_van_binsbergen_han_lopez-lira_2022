@@ -31,14 +31,15 @@ from pathlib import Path
 import pandas as pd
 import wrds
 from pandas.tseries.offsets import MonthEnd
-
+import numpy as np
+from misc_tools import write_parquet
 from settings import config
 
 OUTPUT_DIR = Path(config("OUTPUT_DIR"))
 DATA_DIR = Path(config("DATA_DIR"))
 WRDS_USERNAME = config("WRDS_USERNAME")
-# START_DATE = config("START_DATE")
-# END_DATE = config("END_DATE")
+START_DATE = config("START_DATE")
+END_DATE = config("END_DATE")
 
 
 description_compustat = {
@@ -64,30 +65,54 @@ description_compustat = {
 }
 
 
-def pull_compustat(wrds_username=WRDS_USERNAME):
-    """
-    See description_compustat for a description of the variables.
-    """
-    sql_query = """
-        SELECT 
-            gvkey, datadate, at, sale, cogs, xsga, xint, pstkl, txditc,
-            pstkrv, seq, pstk, ni, sich, dp, ebit
-        FROM 
-            comp.funda
-        WHERE 
-            indfmt='INDL' AND -- industrial companies
-            datafmt='STD' AND -- only standardized records
-            popsrc='D' AND -- only from primary sources
-            consol='C' AND -- consolidated financial statements
-            datadate >= '01/01/1959'
-        """
-    # with wrds.Connection(wrds_username=wrds_username) as db:
-    #     comp = db.raw_sql(sql_query, date_cols=["datadate"])
-    db = wrds.Connection(wrds_username=wrds_username)
-    comp = db.raw_sql(sql_query, date_cols=["datadate"])
-    db.close()
+def pull_compustat(wrds_username=WRDS_USERNAME, start_date=START_DATE, end_date=END_DATE):
+    conn = wrds.Connection(wrds_username=wrds_username)
+    
+    comp = conn.raw_sql(f"""
+        select a.gvkey, a.datadate, a.fyear, a.csho, a.at, a.pstkl, a.txditc,
+            a.pstkrv, a.seq, a.pstk, a.ppegt, a.invt, a.lt, a.sich, a.ib, a.oancf,
+            a.act, a.dlc, a.che, a.lct, a.dvc, a.epspi, a.epspx,
+            a.ajex,
+            a.sale, a.ao, a.prcc_f
+        from comp.funda as a
+        where indfmt='INDL'
+        and datafmt='STD'
+        and popsrc='D'
+        and consol='C'
+        and curcd = 'USD'
+        and datadate between '2020-01-01' and '2025-12-31'
+    """, date_cols=["datadate"])
 
-    comp["year"] = comp["datadate"].dt.year
+    comp["ps"] = np.where(comp["pstkrv"].isnull(), comp["pstkl"], comp["pstkrv"])
+    comp["ps"] = np.where(comp["ps"].isnull(), comp["pstk"], comp["ps"])
+    comp["ps"] = np.where(comp["ps"].isnull(), 0, comp["ps"])
+
+    comp["txditc"] = comp["txditc"].fillna(0)
+    comp["be"] = comp["seq"] + comp["txditc"] - comp["ps"]
+
+    comp["act"] = comp["act"].fillna(0)
+    comp["dlc"] = comp["dlc"].fillna(0)
+    comp["che"] = comp["che"].fillna(0)
+    comp["lct"] = comp["lct"].fillna(0)
+    comp.sort_values(by=["gvkey", "datadate"], inplace=True)
+    comp[["act_ch", "dlc_ch", "che_ch", "lct_ch"]] = comp.groupby("gvkey")[["act", "dlc", "che", "lct"]].diff()
+    comp["acc"] = comp["act_ch"] + comp["dlc_ch"] - comp["che_ch"] - comp["lct_ch"]
+
+    comp["at_l1"] = comp.groupby("gvkey")["at"].shift(1)
+    comp["at_avg"] = comp[["at", "at_l1"]].mean(axis=1)
+    comp["ag"] = comp.groupby("gvkey")["at"].pct_change(fill_method=None)
+    comp["ppegt_diff"] = comp.groupby("gvkey")["ppegt"].diff()
+    comp["ao_diff"] = comp.groupby("gvkey")["ao"].diff()
+    comp["sale_l1"] = comp.groupby("gvkey")["sale"].shift(1)
+    comp["sale_l3"] = comp.groupby("gvkey")["sale"].shift(3)
+    comp["sale_l5"] = comp.groupby("gvkey")["sale"].shift(5)
+    comp["sg_1y"] = comp["sale"] / comp["sale_l1"] - 1
+    comp["sg_3y"] = (comp["sale"] / comp["sale_l3"]) ** (1 / 3) - 1
+    comp["sg_5y"] = (comp["sale"] / comp["sale_l5"]) ** (1 / 5) - 1
+    comp["adj_csho"] = comp["csho"] * comp["ajex"]
+    comp["adj_csho_l1"] = comp.groupby("gvkey")["adj_csho"].shift(1)
+    comp["nsi"] = np.log(comp["adj_csho"] / comp["adj_csho_l1"])
+
     return comp
 
 
@@ -126,61 +151,30 @@ def get_crsp_columns(wrds_username=WRDS_USERNAME):
 
     return columns
 
+def pull_compustat_quarterly(wrds_username=WRDS_USERNAME, start_date=START_DATE, end_date=END_DATE):
+    conn = wrds.Connection(wrds_username=wrds_username)
+    
+    comp_q = conn.raw_sql("""
+        select gvkey, datadate, fyearq, fqtr, 
+            atq, ltq, niq, saleq, ceqq, 
+            cshprq, epspxq, ajexq, rdq
+        from comp.fundq
+        where indfmt='INDL'
+        and datafmt='STD'
+        and popsrc='D'
+        and consol='C'
+        and curcdq = 'USD'
+        and datadate between '2020-01-01' and '2025-12-31'
+    """, date_cols=["datadate", "rdq"])
 
-def pull_CRSP_stock_ciz(wrds_username=WRDS_USERNAME):
-    """Pull necessary CRSP monthly stock data to
-    compute Fama-French factors. Use the new CIZ format.
+    # 基础处理
+    comp_q.sort_values(by=["gvkey", "datadate"], inplace=True)
+    comp_q["adj_cshprq"] = comp_q["cshprq"] * comp_q["ajexq"]
+    comp_q["net_margin_q"] = comp_q["niq"] / comp_q["saleq"].replace(0, np.nan)
+    comp_q["roe_q"] = comp_q["niq"] / comp_q["ceqq"].replace(0, np.nan)
 
-    Notes
-    -----
 
-    ## Cumulative Adjustment Factors (CFACPR and CFACSHR)
-    https://wrds-www.wharton.upenn.edu/pages/support/manuals-and-overviews/crsp/stocks-and-indices/crsp-stock-and-indexes-version-2/crsp-ciz-faq/
-
-    In the legacy format, CRSP provided two data series, CFACPR and CFACSHR for
-    cumulative adjustment factors for price and share respectively. In the new CIZ
-    data format, these two data series are no longer provided, at least in the
-    initial launch, per CRSP.
-
-    WRDS understands the importance of these two variables to many researchers and
-    we prepared a sample code that researchers can use to recreate the series using
-    the raw adjustment factors. However, we need to caution users that the results
-    of our sample code do not line up with the legacy CFACPR and CFACSHR completely.
-    While it generates complete replication in 95% of the daily observations, we do
-    observe major differences in the tail end. We do not have an explanation from
-    CRSP about the remaining 5%, hence we urge researchers to use caution. Please
-    contact CRSP support (Support@crsp.org) if you would like to discuss the issue
-    of missing cumulative adjustment factors in the new CIZ data.
-
-    For now, it's close enough to just let
-    market_cap = mthprc * shrout
-
-    """
-    sql_query = """
-        SELECT 
-            permno, permco, mthcaldt, 
-            issuertype, securitytype, securitysubtype, sharetype, 
-            usincflg, 
-            primaryexch, conditionaltype, tradingstatusflg,
-            mthret, mthretx, shrout, mthprc,
-            cfacshr, cfacpr
-        FROM 
-            crsp.msf_v2
-        WHERE 
-            mthcaldt >= '01/01/1959'
-        """
-
-    db = wrds.Connection(wrds_username=wrds_username)
-    crsp_m = db.raw_sql(sql_query, date_cols=["mthcaldt"])
-    db.close()
-
-    # change variable format to int
-    crsp_m[["permco", "permno"]] = crsp_m[["permco", "permno"]].astype(int)
-
-    # Line up date to be end of month
-    crsp_m["jdate"] = crsp_m["mthcaldt"] + MonthEnd(0)
-
-    return crsp_m
+    return comp_q
 
 
 description_crsp_comp_link = {
@@ -221,20 +215,19 @@ def pull_Fama_French_factors(wrds_username=WRDS_USERNAME):
     return ff
 
 
-def load_compustat(data_dir=DATA_DIR):
-    path = Path(data_dir) / "Compustat.parquet"
+def load_compustat_annual(data_dir=DATA_DIR):
+    path = Path(data_dir) / "compa.parquet"
     comp = pd.read_parquet(path)
     return comp
 
-
-def load_CRSP_stock_ciz(data_dir=DATA_DIR):
-    path = Path(data_dir) / "CRSP_stock_ciz.parquet"
-    crsp = pd.read_parquet(path)
-    return crsp
+def load_compustat_quarterly(data_dir=DATA_DIR):
+    path = Path(data_dir) / "comp_quarterly.parquet"
+    comp_q = pd.read_parquet(path)
+    return comp_q
 
 
 def load_CRSP_Comp_Link_Table(data_dir=DATA_DIR):
-    path = Path(data_dir) / "CRSP_Comp_Link_Table.parquet"
+    path = Path(data_dir) / "ccm.parquet"
     ccm = pd.read_parquet(path)
     return ccm
 
@@ -245,22 +238,14 @@ def load_Fama_French_factors(data_dir=DATA_DIR):
     return ff
 
 
-def _demo():
-    comp = load_compustat(data_dir=DATA_DIR)
-    crsp = load_CRSP_stock_ciz(data_dir=DATA_DIR)
-    ccm = load_CRSP_Comp_Link_Table(data_dir=DATA_DIR)
-    ff = load_Fama_French_factors(data_dir=DATA_DIR)
 
 
 if __name__ == "__main__":
     comp = pull_compustat(wrds_username=WRDS_USERNAME)
-    comp.to_parquet(DATA_DIR / "Compustat.parquet")
+    write_parquet(comp, DATA_DIR / "compa.parquet")
 
-    crsp = pull_CRSP_stock_ciz(wrds_username=WRDS_USERNAME)
-    crsp.to_parquet(DATA_DIR / "CRSP_stock_ciz.parquet")
-
+    comp_q = pull_compustat_quarterly(wrds_username=WRDS_USERNAME)
+    write_parquet(comp_q, DATA_DIR / "comp_quarterly.parquet")
+    
     ccm = pull_CRSP_Comp_Link_Table(wrds_username=WRDS_USERNAME)
-    ccm.to_parquet(DATA_DIR / "CRSP_Comp_Link_Table.parquet")
-
-    ff = pull_Fama_French_factors(wrds_username=WRDS_USERNAME)
-    ff.to_parquet(DATA_DIR / "FF_FACTORS.parquet")
+    write_parquet(ccm, DATA_DIR / "ccm.parquet")

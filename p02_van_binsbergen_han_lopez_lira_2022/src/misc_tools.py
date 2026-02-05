@@ -7,7 +7,8 @@ import datetime
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
-import polars as pl
+import pyarrow as pa
+import pyarrow.parquet as pq
 from dateutil.relativedelta import relativedelta
 from matplotlib import pyplot as plt
 
@@ -15,7 +16,11 @@ from matplotlib import pyplot as plt
 ## Pandas Helpers
 ########################################################################################
 
-
+def write_parquet(df, path):
+    """Write parquet via pyarrow to avoid pandas/pyarrow extension issues."""
+    table = pa.Table.from_pandas(df, preserve_index=False)
+    pq.write_table(table, path)
+    
 def df_to_literal(df, missing_value="None"):
     """Convert a pandas dataframe to a literal string representing the code to recreate it.
 
@@ -130,64 +135,6 @@ def merge_stats(df_left, df_right, on=[]):
     df_stats["intersection/left"] = len(intersection) / len(left_index)
     df_stats["intersection/right"] = len(intersection) / len(right_index)
     return df_stats
-
-
-def dataframe_set_difference(dff, df, library="pandas", show="rows_and_numbers"):
-    """
-    Gives the rows that appear in dff but not in df
-
-    Example
-    -------
-    ```
-    rows = data_frame_set_difference(dff, df)
-    ```
-    """
-    if library == "pandas":
-        # Reset index to ensure the row numbers are captured as a column
-        # This is important for tracking the original row numbers after operations
-        dff_reset = dff.reset_index().rename(columns={"index": "original_row_number"})
-        df_reset = df.reset_index(drop=True)
-
-        # Perform an outer merge with an indicator to identify rows present only in dff
-        merged = dff_reset.merge(
-            df_reset, how="left", indicator=True, on=dff.columns.tolist()
-        )
-
-        # Filter to rows only in dff (left_only)
-        only_in_dff = merged[merged["_merge"] == "left_only"]
-
-        # Extract the original row numbers of these rows
-        row_numbers = only_in_dff["original_row_number"].tolist()
-        ret = row_numbers
-
-    elif library == "polars":
-        # Assuming dff and df have the same schema (column names and types)
-        assert dff.columns == df.columns
-
-        # First, add a temporary column to each DataFrame with row numbers
-        dff_with_index = dff.with_columns(pl.arange(0, dff.height).alias("row_number"))
-        df_with_index = df.with_columns(
-            pl.arange(0, df.height).alias("dummy_row_number")
-        )
-
-        # Perform an anti join to find rows in dff not present in df
-        # Note: This requires the DataFrames to have columns to join on that define row uniqueness
-
-        diff = dff_with_index.join(
-            df_with_index, on=list(dff.columns), how="anti", join_nulls=True
-        )
-
-        # Extract the row numbers of the differing rows
-        row_numbers = diff.select("row_number").to_series(0).to_list()
-        ret = row_numbers
-
-    else:
-        raise ValueError("Unknown library")
-    if show == "rows_and_numbers":
-        rows = dff[row_numbers]
-        ret = row_numbers, rows
-
-    return ret
 
 
 def freq_counts(df, col=None, with_count=True, with_cum_freq=True):
@@ -903,87 +850,3 @@ def plot_weighted_median_with_distribution_bars(
 
     plt.tight_layout()
     return ax
-
-
-def aligned_glimpse(
-    df: pl.DataFrame,
-    max_items: int = 10,
-    sig_figs: int = 6,
-    val_width: int = 12,
-    sci_notation_cols: list[str] | None = None,
-) -> None:
-    """
-    Print a vertical glimpse of the DataFrame with aligned columns.
-
-    - Large numbers (quantities, values, principal) shown in scientific notation
-    - All values padded/clipped to val_width for alignment
-    - One line per column (vertical layout like glimpse)
-
-    Parameters
-    ----------
-    df : pl.DataFrame
-        DataFrame to display
-    max_items : int
-        Maximum number of rows to show (default 10)
-    sig_figs : int
-        Number of significant figures for scientific notation (default 6)
-    val_width : int
-        Width for each value column in aligned output (default 12)
-    sci_notation_cols : list[str] | None
-        Columns that should use scientific notation. If None, uses default list:
-        ["principal_amount_usd", "securities_quantity", "securities_quantity_scaled",
-         "securities_value_usd", "securities_value_at_inception_usd",
-         "securities_value_usd_normalized", "crsp_securities_value"]
-    """
-    # Default columns that should use scientific notation (large numbers)
-    if sci_notation_cols is None:
-        sci_notation_cols = [
-            "principal_amount_usd",
-            "securities_quantity",
-            "securities_quantity_scaled",
-            "securities_value_usd",
-            "securities_value_at_inception_usd",
-            "securities_value_usd_normalized",
-            "crsp_securities_value",
-        ]
-
-    # Number of decimal places = sig_figs - 1 (e.g., 6 sig figs -> 1.23456e+07)
-    sci_decimals = sig_figs - 1
-
-    def format_val(val, col_name: str) -> str:
-        """Format a single value to fixed width."""
-        if val is None:
-            s = "null"
-        elif col_name in sci_notation_cols and isinstance(val, (int, float)):
-            s = f"{val:.{sci_decimals}e}"
-        elif isinstance(val, float):
-            s = f"{val:.2f}"
-        else:
-            s = str(val)
-        # Pad or clip to val_width
-        if len(s) > val_width:
-            return s[: val_width - 1] + "…"
-        return s.rjust(val_width)
-
-    # Limit rows to display
-    df_head = df.head(max_items)
-
-    # Find max column name length for alignment
-    max_col_len = max(len(c) for c in df.columns)
-
-    # Print each column as a row
-    for col_name in df.columns:
-        dtype = df[col_name].dtype
-        original_vals = df_head[col_name].to_list()
-        formatted_vals = [format_val(v, col_name) for v in original_vals]
-
-        # Build output line
-        col_padded = col_name.ljust(max_col_len)
-        dtype_padded = f"<{dtype}>".ljust(12)
-        vals_str = " ".join(formatted_vals)
-
-        print(f"{col_padded} {dtype_padded} {vals_str}")
-
-
-if __name__ == "__main__":
-    pass

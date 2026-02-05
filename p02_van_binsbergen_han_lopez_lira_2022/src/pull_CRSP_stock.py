@@ -23,6 +23,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from pandas.tseries.offsets import MonthEnd
+from misc_tools import write_parquet
 import wrds
 from dateutil.relativedelta import relativedelta
 
@@ -33,77 +35,36 @@ WRDS_USERNAME = config("WRDS_USERNAME")
 START_DATE = config("START_DATE")
 END_DATE = config("END_DATE")
 
+def pull_CRSP_monthly_file(wrds_username=WRDS_USERNAME, start_date=START_DATE, end_date=END_DATE):
+    
+    conn = wrds.Connection(wrds_username=wrds_username)
+    
+    # CRSP Block
+    crsp_m = conn.raw_sql(f"""
+        select a.permno, a.permco, a.date, a.ret, a.retx, a.shrout, a.prc, a.cfacshr,
+            b.shrcd, b.exchcd, b.siccd, b.ncusip,
+            c.dlstcd, c.dlret
+        from crsp.msf as a
+        left join crsp.msenames as b
+        on a.permno=b.permno and b.namedt<=a.date and a.date<=b.nameendt
+        left join crsp.msedelist as c
+        on a.permno=c.permno AND date_trunc('month', a.date) = date_trunc('month', c.dlstdt)
+        where a.date between '2020-01-01' and '2025-12-31'
+        and b.exchcd between 1 and 3
+        and b.shrcd between 10 and 11
+    """, date_cols=["date"])
 
-def pull_CRSP_monthly_file(
-    start_date=START_DATE, end_date=END_DATE, wrds_username=WRDS_USERNAME
-):
-    """
-    Pulls monthly CRSP stock data from a specified start date to end date.
+    crsp_m[["permco", "permno", "shrcd", "exchcd"]] = crsp_m[["permco", "permno", "shrcd", "exchcd"]].astype(int)
+    crsp_m["YearMonth"] = crsp_m["date"] + MonthEnd(0)
 
-    SQL query to pull data, controls for delisting, and importantly
-    follows the guidelines that CRSP uses for inclusion, with the exception
-    of code 73, which is foreign companies -- without including this, the universe
-    of securities is roughly half of what it should be.
-    """
-    # Convert start_date to datetime if it's a string
-    if isinstance(start_date, str):
-        start_date = datetime.strptime(start_date, "%Y-%m-%d")
-    # Not a perfect solution, but since value requires t-1 period market cap,
-    # we need to pull one extra month of data. This is hidden from the user.
-    start_date = start_date - relativedelta(months=1)
-    start_date = start_date.strftime("%Y-%m-%d")
+    crsp_m["dlret"] = np.where((~crsp_m["dlstcd"].isna()) & (crsp_m["dlret"].isna()), -0.5, crsp_m["dlret"])
+    crsp_m["dlret"] = crsp_m["dlret"].fillna(0)
+    crsp_m["retadj"] = (1 + crsp_m["ret"]) * (1 + crsp_m["dlret"]) - 1
+    crsp_m["retadj"] = np.where((crsp_m["ret"].isna()) & (crsp_m["dlret"] != 0), crsp_m["dlret"], crsp_m["ret"])
 
-    query = f"""
-    SELECT 
-        date,
-        msf.permno, msf.permco, shrcd, exchcd, comnam, shrcls, 
-        ret, retx, dlret, dlretx, dlstcd,
-        prc, altprc, vol, shrout, cfacshr, cfacpr,
-        naics, siccd
-    FROM crsp.msf AS msf
-    LEFT JOIN 
-        crsp.msenames as msenames
-    ON 
-        msf.permno = msenames.permno AND
-        msenames.namedt <= msf.date AND
-        msf.date <= msenames.nameendt
-    LEFT JOIN 
-        crsp.msedelist as msedelist
-    ON 
-        msf.permno = msedelist.permno AND
-        date_trunc('month', msf.date)::date =
-        date_trunc('month', msedelist.dlstdt)::date
-    WHERE 
-        msf.date BETWEEN '{start_date}' AND '{end_date}' AND 
-        msenames.shrcd IN (10, 11, 20, 21, 40, 41, 70, 71, 73)
-    """
-    # with wrds.Connection(wrds_username=wrds_username) as db:
-    #     df = db.raw_sql(
-    #         query, date_cols=["date", "namedt", "nameendt", "dlstdt"]
-    #     )
-    db = wrds.Connection(wrds_username=wrds_username)
-    df = db.raw_sql(query, date_cols=["date", "namedt", "nameendt", "dlstdt"])
-    db.close()
+    crsp_m = crsp_m.sort_values(by=["permno", "YearMonth"]).reset_index(drop=True)
 
-    df = df.loc[:, ~df.columns.duplicated()]
-    df["shrout"] = df["shrout"] * 1000
-
-    # Also, as an additional note, CRSP reports that "cfacshr" and "cfacpr" are
-    # not always equal. This means that we cannot use `market_cap` = `prc` *
-    # `shrout` alone. We need to use the cumulative adjustment factors to adjust
-    # for corporate actions that affect the stock price, such as stock splits.
-    # "cfacshr" and "cfacpr" are not always equal because of less common
-    # distribution events, spinoffs, and rights. See here: [CRSP - Useful
-    # Variables](https://vimeo.com/443061703)
-
-    df["adj_shrout"] = df["shrout"] * df["cfacshr"]
-    df["adj_prc"] = df["prc"].abs() / df["cfacpr"]
-    df["market_cap"] = df["adj_prc"] * df["adj_shrout"]
-
-    # Deal with delisting returns
-    df = apply_delisting_returns(df)
-
-    return df
+    return crsp_m
 
 
 def apply_delisting_returns(df):
@@ -176,27 +137,11 @@ def pull_CRSP_index_files(
 
 
 def load_CRSP_monthly_file(data_dir=DATA_DIR):
-    path = Path(data_dir) / "CRSP_MSF_INDEX_INPUTS.parquet"
+    path = Path(data_dir) / "crsp_m.parquet"
     df = pd.read_parquet(path)
     return df
-
-
-def load_CRSP_index_files(data_dir=DATA_DIR):
-    path = Path(data_dir) / "CRSP_MSIX.parquet"
-    df = pd.read_parquet(path)
-    return df
-
-
-def _demo():
-    df_msf = load_CRSP_monthly_file(data_dir=DATA_DIR)
-    df_msix = load_CRSP_index_files(data_dir=DATA_DIR)
 
 
 if __name__ == "__main__":
     df_msf = pull_CRSP_monthly_file(start_date=START_DATE, end_date=END_DATE)
-    path = Path(DATA_DIR) / "CRSP_MSF_INDEX_INPUTS.parquet"
-    df_msf.to_parquet(path)
-
-    df_msix = pull_CRSP_index_files(start_date=START_DATE, end_date=END_DATE)
-    path = Path(DATA_DIR) / "CRSP_MSIX.parquet"
-    df_msix.to_parquet(path)
+    write_parquet(df_msf, DATA_DIR / "crsp_m.parquet")

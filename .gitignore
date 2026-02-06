@@ -16,6 +16,8 @@ data_manual/*.parquet
 _output/
 reports/*.pdf
 *.html
+!docs/**/*.html
+!docs/*.html
 
 # Python / Environment
 __pycache__/

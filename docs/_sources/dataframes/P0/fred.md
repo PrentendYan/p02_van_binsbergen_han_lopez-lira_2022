@@ -33,7 +33,7 @@ $ __index_level_0__  <datetime[ns]> 2025-12-01 00:00:00
 | How is data pulled?            | FRED API via Python                                                    |
 | Data available up to (min)     | None                                                             |
 | Data available up to (max)     | None                                                             |
-| Dataframe Path                 | /Users/yandong/Documents/GitHub/p02_van_binsbergen_han_lopez-lira_2022/p02_van_binsbergen_han_lopez_lira_2022/_data/fred.parquet                                                   |
+| Dataframe Path                 | /Users/yandong/Documents/GitHub/p02_van_binsbergen_han_lopez-lira_2022/_data/fred.parquet                                                   |
 
 
 **Linked Charts:**
@@ -51,8 +51,8 @@ $ __index_level_0__  <datetime[ns]> 2025-12-01 00:00:00
 | Lead Pipeline Developer         | Dong Yan, Yilong Lin             |
 | Contributors                    | Dong Yan, Yilong Lin           |
 | Git Repo URL                    |                         |
-| Pipeline Web Page               | <a href="file:///Users/yandong/Documents/GitHub/p02_van_binsbergen_han_lopez-lira_2022/p02_van_binsbergen_han_lopez_lira_2022/docs/index.html">Pipeline Web Page      |
-| Date of Last Code Update        | 2026-02-06 15:11:11           |
+| Pipeline Web Page               | <a href="file:///Users/yandong/Documents/GitHub/p02_van_binsbergen_han_lopez-lira_2022/docs/index.html">Pipeline Web Page      |
+| Date of Last Code Update        | 2026-02-06 15:21:11           |
 | OS Compatibility                |  |
 | Linked Dataframes               |  [P0:crsp_m](../dataframes/P0/crsp_m.md)<br>  [P0:compa](../dataframes/P0/compa.md)<br>  [P0:ibes_forecast](../dataframes/P0/ibes_forecast.md)<br>  [P0:ff_factors](../dataframes/P0/ff_factors.md)<br>  [P0:fred](../dataframes/P0/fred.md)<br>  |
 

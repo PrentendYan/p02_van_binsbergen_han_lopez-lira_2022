@@ -1,0 +1,37 @@
+# Data files
+_data/
+data/
+data_manual/*.csv
+data_manual/*.parquet
+*.parquet
+*.csv
+*.xlsx
+*.xls
+*.db
+*.sqlite
+*.h5
+*.hdf5
+
+# Generated output
+_output/
+reports/*.pdf
+*.html
+
+# Python / Environment
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.env
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Sphinx
+# docs/ # Allow docs to be committed for GitHub Pages
+docs_src/apidocs/
+_build/

@@ -44,7 +44,7 @@ $ retadj             <f64> 0.267897
 | How is data pulled?            | WRDS API via Python                                                    |
 | Data available up to (min)     | 2019-12-31 00:00:00                                                             |
 | Data available up to (max)     | 2019-12-31 00:00:00                                                             |
-| Dataframe Path                 | /Users/yandong/Documents/GitHub/p02_van_binsbergen_han_lopez-lira_2022/p02_van_binsbergen_han_lopez_lira_2022/_data/WRDS/crsp_m.parquet                                                   |
+| Dataframe Path                 | /Users/yandong/Documents/GitHub/p02_van_binsbergen_han_lopez-lira_2022/_data/WRDS/crsp_m.parquet                                                   |
 
 
 **Linked Charts:**
@@ -62,8 +62,8 @@ $ retadj             <f64> 0.267897
 | Lead Pipeline Developer         | Dong Yan, Yilong Lin             |
 | Contributors                    | Dong Yan, Yilong Lin           |
 | Git Repo URL                    |                         |
-| Pipeline Web Page               | <a href="file:///Users/yandong/Documents/GitHub/p02_van_binsbergen_han_lopez-lira_2022/p02_van_binsbergen_han_lopez_lira_2022/docs/index.html">Pipeline Web Page      |
-| Date of Last Code Update        | 2026-02-06 15:11:11           |
+| Pipeline Web Page               | <a href="file:///Users/yandong/Documents/GitHub/p02_van_binsbergen_han_lopez-lira_2022/docs/index.html">Pipeline Web Page      |
+| Date of Last Code Update        | 2026-02-06 15:21:11           |
 | OS Compatibility                |  |
 | Linked Dataframes               |  [P0:crsp_m](../dataframes/P0/crsp_m.md)<br>  [P0:compa](../dataframes/P0/compa.md)<br>  [P0:ibes_forecast](../dataframes/P0/ibes_forecast.md)<br>  [P0:ff_factors](../dataframes/P0/ff_factors.md)<br>  [P0:fred](../dataframes/P0/fred.md)<br>  |
 

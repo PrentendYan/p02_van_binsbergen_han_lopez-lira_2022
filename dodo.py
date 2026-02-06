@@ -151,3 +151,28 @@ def task_pull():
         "file_dep": ["./src/settings.py", "./src/pull_fred.py"],
         "clean": [],
     }
+
+
+def task_generate_charts():
+    """Generate exploratory HTML charts from data"""
+    yield {
+        "name": "generate_charts",
+        "doc": "Generate exploratory HTML charts (CRSP, Compustat, IBES, FF, FRED) from data",
+        "actions": ["ipython ./src/generate_chart.py"],
+        "targets": [
+            OUTPUT_DIR / "explore_crsp.html",
+            OUTPUT_DIR / "explore_compustat.html",
+            OUTPUT_DIR / "explore_ibes.html",
+            OUTPUT_DIR / "explore_ff.html",
+            OUTPUT_DIR / "explore_fred.html",
+        ],
+        "file_dep": [
+            "./src/generate_chart.py",
+            str(DATA_DIR / "WRDS" / "crsp_m.parquet"),
+            str(DATA_DIR / "compa.parquet"),
+            str(DATA_DIR / "Forecast_EPS_summary_unadjusted_1986_2019.parquet"),
+            str(DATA_DIR / "FF_FACTORS.parquet"),
+            str(DATA_DIR / "fred.parquet"),
+        ],
+        "clean": True,
+    }

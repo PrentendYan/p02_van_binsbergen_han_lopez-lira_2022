@@ -46,44 +46,192 @@ notebook_path = "_output/03_public_repo_summary_charts.ipynb"
 [dataframes]
 
 
-[dataframes.repo_public]
-dataframe_name = "Public Repo Data"
-short_description_df = "Public repo series and related economic and financial aggregates."
-data_sources = ["FRED", "Office of Financial Research"]
-data_providers = ["FRED", "Office of Financial Research"]
-links_to_data_providers = ["https://fred.stlouisfed.org/", "https://www.financialresearch.gov/short-term-funding-monitor/api/"]
-topic_tags = ["Short Term Funding", "Repo"]
+[dataframes.crsp_m]
+dataframe_name = "CRSP Monthly Stock Data"
+short_description_df = "Monthly stock returns and other data from CRSP."
+data_sources = ["WRDS"]
+data_providers = ["CRSP"]
+links_to_data_providers = ["https://wrds-www.wharton.upenn.edu/"]
+topic_tags = ["Stock", "Returns"]
+type_of_data_access = "Subscription"
+data_license = "Yes"
+license_expiration_date = "N/A"
+need_to_contact_provider = "No"
+provider_contact_info = ""
+restriction_on_use = "Yes"
+how_is_pulled = "WRDS API via Python"
+path_to_parquet_data = "./_data/WRDS/crsp_m.parquet"
+path_to_excel_data = ""
+date_col = "date"
+dataframe_docs_path = "./docs_src/dataframes/crsp_m.md"
+
+[dataframes.compa]
+dataframe_name = "Compustat Annual"
+short_description_df = "Annual financial statement data from Compustat."
+data_sources = ["WRDS"]
+data_providers = ["Compustat"]
+links_to_data_providers = ["https://wrds-www.wharton.upenn.edu/"]
+topic_tags = ["Fundamentals", "Accounting"]
+type_of_data_access = "Subscription"
+data_license = "Yes"
+license_expiration_date = "N/A"
+need_to_contact_provider = "No"
+provider_contact_info = ""
+restriction_on_use = "Yes"
+how_is_pulled = "WRDS API via Python"
+path_to_parquet_data = "./_data/compa.parquet"
+path_to_excel_data = ""
+date_col = "datadate"
+dataframe_docs_path = "./docs_src/dataframes/compa.md"
+
+[dataframes.ibes_forecast]
+dataframe_name = "IBES EPS Forecast"
+short_description_df = "Unadjusted EPS forecasts from IBES."
+data_sources = ["WRDS"]
+data_providers = ["IBES"]
+links_to_data_providers = ["https://wrds-www.wharton.upenn.edu/"]
+topic_tags = ["Forecasts", "Analyst"]
+type_of_data_access = "Subscription"
+data_license = "Yes"
+license_expiration_date = "N/A"
+need_to_contact_provider = "No"
+provider_contact_info = ""
+restriction_on_use = "Yes"
+how_is_pulled = "WRDS API via Python"
+path_to_parquet_data = "./_data/Forecast_EPS_summary_unadjusted_1986_2019.parquet"
+path_to_excel_data = ""
+date_col = "statpers"
+dataframe_docs_path = "./docs_src/dataframes/ibes_forecast.md"
+
+[dataframes.ff_factors]
+dataframe_name = "Fama-French Factors"
+short_description_df = "Fama-French 5 factors + Mom + ST Reversal."
+data_sources = ["WRDS"]
+data_providers = ["Fama-French"]
+links_to_data_providers = ["https://wrds-www.wharton.upenn.edu/"]
+topic_tags = ["Asset Pricing", "Factors"]
+type_of_data_access = "Subscription"
+data_license = "Yes"
+license_expiration_date = "N/A"
+need_to_contact_provider = "No"
+provider_contact_info = ""
+restriction_on_use = "Yes"
+how_is_pulled = "WRDS API via Python"
+path_to_parquet_data = "./_data/FF_FACTORS.parquet"
+path_to_excel_data = ""
+date_col = "date"
+dataframe_docs_path = "./docs_src/dataframes/ff_factors.md"
+
+[dataframes.fred]
+dataframe_name = "FRED Macro Data"
+short_description_df = "Macroeconomic time series from FRED."
+data_sources = ["FRED"]
+data_providers = ["FRED"]
+links_to_data_providers = ["https://fred.stlouisfed.org/"]
+topic_tags = ["Macro", "Economics"]
 type_of_data_access = "Public"
 data_license = "No"
 license_expiration_date = "N/A"
 need_to_contact_provider = "No"
 provider_contact_info = ""
 restriction_on_use = "No"
-how_is_pulled = "Web API via Python"
-path_to_parquet_data = "./_data/repo_public.parquet"
-path_to_excel_data = "./_data/repo_public.xlsx"
+how_is_pulled = "FRED API via Python"
+path_to_parquet_data = "./_data/fred.parquet"
+path_to_excel_data = ""
 date_col = "date"
-dataframe_docs_path = "./docs_src/dataframes/repo_public.md"
+dataframe_docs_path = "./docs_src/dataframes/fred.md"
 
 
 [charts]
 
 
-[charts.repo_rates]
-chart_name = "Repo Rates"
-short_description_chart = "SOFR, the Effective Funds Rate, and the Fed's Target Range"
-dataframe_id = "repo_public"
-topic_tags = ["Short Term Funding", "Repo"]
-data_series_start_date = "2/29/2012"
-data_frequency = "Daily"
-observation_period = "Weekday"
-lag_in_data_release = "One day"
-data_release_dates = "Weekday"
+[charts.explore_crsp]
+chart_name = "CRSP Explore"
+short_description_chart = "Exploratory chart for CRSP monthly returns."
+dataframe_id = "crsp_m"
+topic_tags = ["Stock", "Exploratory"]
+data_series_start_date = "1986-01-01"
+data_frequency = "Monthly"
+observation_period = "Month End"
+lag_in_data_release = "Variable"
+data_release_dates = "Variable"
 seasonal_adjustment = "None"
 units = "Percent"
-data_series = ""
+data_series = "ret"
 mnemonic = ""
-path_to_html_chart = "./_output/repo_rates.html"
-path_to_excel_chart = "./src/repo_rates.xlsx"
-chart_docs_path = "./docs_src/charts/repo_rates.md"
+path_to_html_chart = "./_output/explore_crsp.html"
+path_to_excel_chart = ""
+chart_docs_path = "./docs_src/charts/explore_crsp.md"
+
+[charts.explore_compustat]
+chart_name = "Compustat Explore"
+short_description_chart = "Exploratory chart for Compustat assets."
+dataframe_id = "compa"
+topic_tags = ["Accounting", "Exploratory"]
+data_series_start_date = "1986-01-01"
+data_frequency = "Annual"
+observation_period = "Fiscal Year End"
+lag_in_data_release = "Variable"
+data_release_dates = "Variable"
+seasonal_adjustment = "None"
+units = "USD"
+data_series = "at"
+mnemonic = ""
+path_to_html_chart = "./_output/explore_compustat.html"
+path_to_excel_chart = ""
+chart_docs_path = "./docs_src/charts/explore_compustat.md"
+
+[charts.explore_ibes]
+chart_name = "IBES Explore"
+short_description_chart = "Exploratory chart for IBES forecasts."
+dataframe_id = "ibes_forecast"
+topic_tags = ["Forecast", "Exploratory"]
+data_series_start_date = "1986-01-01"
+data_frequency = "Monthly"
+observation_period = "Month End"
+lag_in_data_release = "Variable"
+data_release_dates = "Variable"
+seasonal_adjustment = "None"
+units = "USD"
+data_series = "EPS"
+mnemonic = ""
+path_to_html_chart = "./_output/explore_ibes.html"
+path_to_excel_chart = ""
+chart_docs_path = "./docs_src/charts/explore_ibes.md"
+
+[charts.explore_ff]
+chart_name = "Fama-French Explore"
+short_description_chart = "Exploratory chart for FF factors."
+dataframe_id = "ff_factors"
+topic_tags = ["Factors", "Exploratory"]
+data_series_start_date = "1986-01-01"
+data_frequency = "Monthly"
+observation_period = "Month End"
+lag_in_data_release = "Variable"
+data_release_dates = "Variable"
+seasonal_adjustment = "None"
+units = "Percent"
+data_series = "mktrf"
+mnemonic = ""
+path_to_html_chart = "./_output/explore_ff.html"
+path_to_excel_chart = ""
+chart_docs_path = "./docs_src/charts/explore_ff.md"
+
+[charts.explore_fred]
+chart_name = "FRED Explore"
+short_description_chart = "Exploratory chart for FRED data."
+dataframe_id = "fred"
+topic_tags = ["Macro", "Exploratory"]
+data_series_start_date = "1986-01-01"
+data_frequency = "Quarterly"
+observation_period = "Quarter End"
+lag_in_data_release = "Variable"
+data_release_dates = "Variable"
+seasonal_adjustment = "SA"
+units = "Growth"
+data_series = "consumption_growth"
+mnemonic = ""
+path_to_html_chart = "./_output/explore_fred.html"
+path_to_excel_chart = ""
+chart_docs_path = "./docs_src/charts/explore_fred.md"
 

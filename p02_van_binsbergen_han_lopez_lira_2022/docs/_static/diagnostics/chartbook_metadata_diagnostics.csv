@@ -1,0 +1,12 @@
+Name,Metadata Complete,Object Type,Identifier,Pipeline,Missing Fields,Page Link
+Man vs. Machine Learning,False,pipeline,P0,P0,"build_commands, os_compatibility, git_repo_URL",../index.html
+CRSP Monthly Stock Data,True,dataframe,crsp_m,P0,,../dataframes/P0/crsp_m.html
+Compustat Annual,True,dataframe,compa,P0,,../dataframes/P0/compa.html
+IBES EPS Forecast,True,dataframe,ibes_forecast,P0,,../dataframes/P0/ibes_forecast.html
+Fama-French Factors,True,dataframe,ff_factors,P0,,../dataframes/P0/ff_factors.html
+FRED Macro Data,True,dataframe,fred,P0,,../dataframes/P0/fred.html
+CRSP Explore,False,chart,explore_crsp,P0,data_release_timing,../charts/P0.explore_crsp.html
+Compustat Explore,False,chart,explore_compustat,P0,data_release_timing,../charts/P0.explore_compustat.html
+IBES Explore,False,chart,explore_ibes,P0,data_release_timing,../charts/P0.explore_ibes.html
+Fama-French Explore,False,chart,explore_ff,P0,data_release_timing,../charts/P0.explore_ff.html
+FRED Explore,False,chart,explore_fred,P0,data_release_timing,../charts/P0.explore_fred.html

@@ -166,6 +166,48 @@ defaults = {
     **defaults,
 }
 
+# Derived paths (subdirs of DATA_DIR / OUTPUT_DIR)
+defaults["PROCESSED_DIR"] = defaults["DATA_DIR"] / "processed_data"
+defaults["RESULTS_DIR"] = defaults["OUTPUT_DIR"] / "results"
+defaults["IMAGES_DIR"] = defaults["OUTPUT_DIR"] / "images"
+
+# Pipeline: forecast periods and data prep
+defaults["DATA_START_DATE"] = "1985-01-01"  # WRDS / rolling window start
+defaults["FORECAST_PERIODS"] = ["Q1", "Q2", "Q3", "A1", "A2"]
+defaults["COLS_TO_DROP_PREP"] = [
+    "adjust_factor", "ticker", "cusip", "cname", "fpedats", "statpers",
+    "announcement_actual_eps", "announcement_past_ep", "public_date", "fpi",
+]
+defaults["TRIM_VALUE"] = 10
+defaults["VARS_TO_TRIM"] = ["adj_actual", "meanest", "adj_past_eps"]
+defaults["ROLLING_START_YEAR"] = 1985
+defaults["ROLLING_END_YEAR"] = 2019
+defaults["ROLLING_TRAIN_LENGTH"] = 11
+defaults["ROLLING_N_LOOPS"] = 408
+defaults["ROLLING_TRAIN_LENGTH_A2"] = 23
+defaults["ROLLING_N_LOOPS_A2"] = 396
+
+# Random Forest (train_rf / partial_dependence / functions)
+defaults["RF_N_ESTIMATORS"] = 2000
+defaults["RF_MAX_DEPTH"] = 7
+defaults["RF_MAX_SAMPLES"] = 0.01
+defaults["RF_MIN_SAMPLES_LEAF"] = 5
+defaults["RF_N_JOBS"] = -1
+
+# Stat analysis
+defaults["POST_REGULATION_DATE"] = "2000-10"
+
+# Partial dependence plot
+defaults["PDP_DEFAULT_PERIOD"] = "Q1"
+defaults["PDP_GRID_RESOLUTION"] = 100
+defaults["WINSORIZE_LIMITS"] = (0.01, 0.01)
+
+# Bias analysis / figures
+defaults["BIAS_PLOT_YEAR_LOCATOR"] = 2
+defaults["BIAS_FIGSIZE"] = (15, 10)
+defaults["BIAS_DPI"] = 80
+defaults["OUTPUT_DPI"] = 100
+
 
 def config(
     var_name,

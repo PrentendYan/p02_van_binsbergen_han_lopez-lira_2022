@@ -96,10 +96,12 @@ def read_merge_prepare_data(forecast_period, Macro_Data, data_dir=None):
     Merged_Data = Merged_Data.reset_index()
     Merged_Data.sort_values(by=['permno', 'rankdate'], ascending=True)
     Merged_Data['Date'] = pd.to_datetime(Merged_Data['rankdate'], format='%Y-%m').dt.to_period('M')
-    Merged_Data = Merged_Data[(Merged_Data['Date'].dt.year >= 1985) & (Merged_Data['Date'].dt.year <= 2019)].drop(['rankdate'], axis=1)
+    from settings import config
+    start_year = config("ROLLING_START_YEAR")
+    end_year = config("ROLLING_END_YEAR")
+    Merged_Data = Merged_Data[(Merged_Data['Date'].dt.year >= start_year) & (Merged_Data['Date'].dt.year <= end_year)].drop(['rankdate'], axis=1)
     Merged_Data.sort_values(by='Date', ascending=True, inplace=True)
 
-    from settings import config
     columns_to_drop = config("COLS_TO_DROP_PREP")
     Merged_Data.drop(columns=columns_to_drop, axis=1, inplace=True)
 
@@ -125,8 +127,12 @@ def train_test_rolling(period, data_frame):
     Rolling-window training and testing for RF and OLS.
     """
     from settings import config
-    data_frame = data_frame[(data_frame['Date'] >= '1985-01') & (data_frame['Date'] <= '2019-12')]
-    start_train = pd.to_datetime('1985-01', format='%Y-%m').to_period('M')
+    start_year = config("ROLLING_START_YEAR")
+    end_year = config("ROLLING_END_YEAR")
+    date_start = f"{start_year}-01"
+    date_end = f"{end_year}-12"
+    data_frame = data_frame[(data_frame['Date'] >= date_start) & (data_frame['Date'] <= date_end)]
+    start_train = pd.to_datetime(date_start, format='%Y-%m').to_period('M')
     print(f"Length total df: {len(data_frame)}")
 
     y_hat_test_RF = pd.Series(dtype=float)
@@ -174,10 +180,12 @@ def train_test_rolling(period, data_frame):
             y_hat_LR_temp = pd.Series(olsres.predict(X_test_LR))
             y_hat_test_LR = pd.concat([y_hat_test_LR, y_hat_LR_temp], ignore_index=True)
 
+    result_start_other = f"{start_year + 1}-01"
+    result_start_a2 = f"{start_year + 2}-01"
     if period == 'A2':
-        result_df = data_frame[(data_frame['Date'] >= '1987-01') & (data_frame['Date'] <= '2019-12')].copy()
+        result_df = data_frame[(data_frame['Date'] >= result_start_a2) & (data_frame['Date'] <= date_end)].copy()
     else:
-        result_df = data_frame[(data_frame['Date'] >= '1986-01') & (data_frame['Date'] <= '2019-12')].copy()
+        result_df = data_frame[(data_frame['Date'] >= result_start_other) & (data_frame['Date'] <= date_end)].copy()
     result_df = result_df.sort_values('Date').reset_index(drop=True)
     n_test = len(y_hat_test_RF)
     result_df = result_df.head(n_test).copy()

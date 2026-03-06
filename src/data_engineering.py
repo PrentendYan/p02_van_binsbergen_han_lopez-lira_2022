@@ -153,9 +153,9 @@ def run_data_engineering(use_wrds=True):
     Cons_Raw = pd.read_csv(DATA_DIR / "real_personal_consumption_FED.csv", index_col=0)
     Unempl_Raw = pd.read_csv(DATA_DIR / "Unemployment_FED.csv", skiprows=range(1, 225), index_col=0)
 
-    GDP_Data = PrepareMacro(GDP_Raw, 65, 11, 'ROUTPUT', 'GDP')
-    IPT_Data = PrepareMacro(IPT_Raw, 72, 11, 'IPT', 'IPT')
-    Cons_Data = PrepareMacro(Cons_Raw, 65, 11, 'RCON', 'Cons')
+    GDP_Data = PrepareMacro(GDP_Raw, config("MACRO_GDP_START_YEAR"), config("MACRO_GDP_START_MONTH"), 'ROUTPUT', 'GDP')
+    IPT_Data = PrepareMacro(IPT_Raw, config("MACRO_IPT_START_YEAR"), config("MACRO_IPT_START_MONTH"), 'IPT', 'IPT')
+    Cons_Data = PrepareMacro(Cons_Raw, config("MACRO_CONS_START_YEAR"), config("MACRO_CONS_START_MONTH"), 'RCON', 'Cons')
 
     Unempl_Arr = Unempl_Raw.to_numpy()
     N = Unempl_Arr.shape[0]

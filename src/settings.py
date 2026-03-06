@@ -197,6 +197,14 @@ defaults["RF_N_JOBS"] = -1
 # Stat analysis
 defaults["POST_REGULATION_DATE"] = "2000-10"
 
+# Macro data source column start points (Fed CSV structure)
+defaults["MACRO_GDP_START_YEAR"] = 65
+defaults["MACRO_GDP_START_MONTH"] = 11
+defaults["MACRO_IPT_START_YEAR"] = 72
+defaults["MACRO_IPT_START_MONTH"] = 11
+defaults["MACRO_CONS_START_YEAR"] = 65
+defaults["MACRO_CONS_START_MONTH"] = 11
+
 # Partial dependence plot
 defaults["PDP_DEFAULT_PERIOD"] = "Q1"
 defaults["PDP_GRID_RESOLUTION"] = 100

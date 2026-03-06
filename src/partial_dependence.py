@@ -56,8 +56,10 @@ def run_partial_dependence(period=None):
         n_estimators=config("RF_N_ESTIMATORS"),
         max_depth=config("RF_MAX_DEPTH"),
         max_samples=config("RF_MAX_SAMPLES"),
-        min_samples_leaf=config("RF_MIN_SAMPLES_LEAF"),
+        min_samples_leaf=1,
+        max_features='sqrt',
         n_jobs=config("RF_N_JOBS"),
+        random_state=42,
     )
     rf_model.fit(X_scaled, y)
 

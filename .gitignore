@@ -37,3 +37,6 @@ env/
 # docs/ # Allow docs to be committed for GitHub Pages
 docs_src/apidocs/
 _build/
+
+#
+.pytest_cache/

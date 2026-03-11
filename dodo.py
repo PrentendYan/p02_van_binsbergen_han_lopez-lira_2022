@@ -221,5 +221,48 @@ def task_pipeline_table2():
         ],
         "clean": [],
     }
-    
-    
+
+
+def task_run_extended():
+    """Extended pipeline: same analysis with data through latest (1986 to 2026-02). Outputs to _output_extended/."""
+    targets = [
+        OUTPUT_EXTENDED / "table2_term_structure.txt",
+        OUTPUT_EXTENDED / "images" / "partial_dependence_meanest.png",
+    ]
+    return {
+        "actions": [
+            "ipython ./src/settings.py",
+            "python ./src/run_extended.py",
+        ],
+        "targets": targets,
+        "file_dep": [
+            "./src/settings.py",
+            "./src/run_extended.py",
+            "./src/load_data.py",
+            "./src/data_engineering.py",
+            "./src/train_rf.py",
+            "./src/partial_dependence.py",
+            "./src/table2_term_structure.py",
+            "./src/stat_analysis.py",
+            "./src/bias_analysis.py",
+            "./src/functions.py",
+        ],
+        "clean": [],
+    }
+
+
+def task_generate_replication_latex():
+    """Generate replication report LaTeX from pipeline outputs (reports/replication_report_generated.tex)."""
+    return {
+        "actions": [
+            "ipython ./src/settings.py",
+            "python ./src/generate_replication_latex.py",
+        ],
+        "targets": [REPORTS_DIR / "replication_report_generated.tex"],
+        "file_dep": [
+            "./src/settings.py",
+            "./src/generate_replication_latex.py",
+            str(OUTPUT_DIR / "table2_term_structure.csv"),
+        ],
+        "clean": [],
+    }

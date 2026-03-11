@@ -48,3 +48,13 @@ _build/
 #
 .pytest_cache/
 
+# latex
+*.log
+*.aux
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fls.old
+

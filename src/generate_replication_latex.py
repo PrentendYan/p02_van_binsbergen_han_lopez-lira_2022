@@ -1,4 +1,146 @@
+# %% [markdown]
+# # Generate Replication Report (LaTeX)
+# 
+# **Run this notebook from the project root** so that `OUTPUT_DIR` and paths resolve correctly.
+# 
+# This notebook builds a **single LaTeX document** that satisfies the replication checklist:
+# 
+# - Describes the nature of the replication project
+# - Contains **all** tables and charts produced by the code (including Table 2 and the partial dependence figure)
+# - Gives a high-level overview of successes and challenges
+# - Explains data sources used
+# - **No code snippets** in the generated PDF—only narrative, tables, and figures
+# 
+# The generated file is written to **`reports/replication_report_generated.tex`**. Compile from the project root with:
+# 
+# ```bash
+# cd reports && pdflatex replication_report_generated.tex
+# ```
 
+# %%
+import sys
+from pathlib import Path
+
+# Project root = directory that contains "reports" and "src" (outermost reports)
+_cwd = Path(".").resolve()
+if (_cwd / "reports").is_dir():
+    ROOT = _cwd
+else:
+    ROOT = _cwd.parent  # e.g. running from src/ -> project root
+
+sys.path.insert(0, str(ROOT / "src"))
+try:
+    from settings import config
+    OUTPUT_DIR = Path(config("OUTPUT_DIR"))
+    IMAGES_DIR = Path(config("IMAGES_DIR"))
+except Exception:
+    OUTPUT_DIR = ROOT / "_output"
+    IMAGES_DIR = OUTPUT_DIR / "images"
+
+REPORTS_DIR = ROOT / "reports"  # outermost reports folder
+OUTPUT_EXTENDED = ROOT / "_output_extended"  # extended sample (1986 to latest)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+print("OUTPUT_DIR:", OUTPUT_DIR)
+print("REPORTS_DIR:", REPORTS_DIR)
+print("OUTPUT_EXTENDED:", OUTPUT_EXTENDED)
+
+# %% [markdown]
+# ## 1. Build Table 2 (Term Structure) from CSV
+# 
+# Read `table2_term_structure.csv` (produced by `src/table2_term_structure.py`) and convert it to a LaTeX `tabular` so that the report is **automatically generated** from the code output.
+
+# %%
+import pandas as pd
+
+table2_path = OUTPUT_DIR / "table2_term_structure.csv"
+if not table2_path.exists():
+    raise FileNotFoundError(f"Run the pipeline first to create {table2_path}")
+
+df = pd.read_csv(table2_path)
+
+def latex_cell(val):
+    if val == "" or (isinstance(val, float) and pd.isna(val)):
+        return ""
+    if isinstance(val, (int, float)):
+        if isinstance(val, int) and val >= 1000:
+            return f"{val:,}".replace(",", "{\\,}")
+        return str(val)
+    return str(val)
+
+cols = ["Horizon", "RF", "AF", "AE", "(RF-AE)", "(AF-AE)", "(RF-AE)^2", "(AF-AE)^2", "(AF-RF)/P", "N"]
+header = " & ".join(c.replace("^2", "$^2$") if "^2" in c else c for c in cols) + " \\\\"
+lines = ["\\toprule", header, "\\midrule"]
+
+for _, row in df.iterrows():
+    cells = [str(row["Horizon"])]
+    for c in cols[1:]:
+        cells.append(latex_cell(row.get(c, "")))
+    line = " & ".join(cells) + " \\\\"
+    if row["Horizon"] == "t-stat":
+        line = "\\textit{t-stat} & " + " & ".join(cells[1:]) + " \\\\"
+    lines.append(line)
+
+lines.append("\\bottomrule")
+table2_latex = "\n".join(lines)
+print("Table 2 LaTeX fragment (first 5 lines):")
+print("\n".join(lines[:5]))
+
+# %%
+# Build Table 2 LaTeX for extended sample from _output_extended (read from CSV or TXT)
+table2_extended_latex = None
+ext_csv = OUTPUT_EXTENDED / "table2_term_structure.csv"
+ext_txt = OUTPUT_EXTENDED / "table2_term_structure.txt"
+if ext_csv.exists():
+    df_ext = pd.read_csv(ext_csv)
+    lines_ext = ["\\toprule", header, "\\midrule"]
+    for _, row in df_ext.iterrows():
+        cells = [str(row["Horizon"])]
+        for c in cols[1:]:
+            cells.append(latex_cell(row.get(c, "")))
+        line = " & ".join(cells) + " \\\\"
+        if row["Horizon"] == "t-stat":
+            line = "\\textit{t-stat} & " + " & ".join(cells[1:]) + " \\\\"
+        lines_ext.append(line)
+    lines_ext.append("\\bottomrule")
+    table2_extended_latex = "\n".join(lines_ext)
+elif ext_txt.exists():
+    raw = ext_txt.read_text(encoding="utf-8").strip().split("\n")
+    lines_ext = ["\\toprule", header, "\\midrule"]
+    i = 2  # skip header and separator
+    while i < len(raw):
+        parts = raw[i].split()
+        if not parts or parts[0] == "Horizon" or parts[0] == "t-stat":
+            i += 1
+            continue
+        # data row: horizon + 9 numbers
+        if len(parts) >= 10:
+            horizon, nums = parts[0], parts[1:10]
+            n_str = nums[8].replace(",", "{\\,}") if len(nums) > 8 else nums[8]
+            line = f"{horizon} & {' & '.join(nums[:8])} & {n_str} \\\\"
+            lines_ext.append(line)
+        i += 1
+        # t-stat row
+        if i < len(raw) and raw[i].strip().startswith("t-stat"):
+            tparts = raw[i].split()
+            t_vals = [x for x in tparts[1:] if x.lstrip("-").replace(".", "").isdigit()]
+            if len(t_vals) >= 3:
+                lines_ext.append("\\textit{t-stat} &  &  &  & " + " & ".join(t_vals[:2]) + " &  &  & " + t_vals[2] + " &  \\\\")
+            i += 1
+    lines_ext.append("\\bottomrule")
+    table2_extended_latex = "\n".join(lines_ext)
+if table2_extended_latex:
+    print("Extended Table 2 built from", "CSV" if ext_csv.exists() else "TXT")
+else:
+    print("No extended table found in _output_extended; extended section will be skipped or show placeholder.")
+
+# %% [markdown]
+# ## 2. Assemble the full LaTeX document
+# 
+# Sections: Overview, Data Sources, Results (Table 2 + Partial Dependence Figure), Successes and Challenges. Figures and table are included by reference; the table body is generated from the CSV above.
+
+# %%
+preamble = r"""
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
@@ -14,7 +156,9 @@
 \newcommand{\PathToAssets}{../assets}
 
 \begin{document}
+"""
 
+overview = r"""
 \title{Replication Report: Man vs.\ Machine Learning\\
 {\large van Binsbergen, Han, Lopez-Lira (2022)}}
 \author{Replication Project}
@@ -38,7 +182,9 @@ The paper then uses this benchmark to show that analysts are, on average, \textb
 \textbf{Table~2 (Term structure of earnings forecasts).} Table~2 compares the properties of \textbf{analysts' forecasts} with the \textbf{ML (random forest) forecasts} across five horizons (one to three quarters ahead, one and two years ahead). It serves three goals: (1)~to \textbf{verify that the ML forecast is unbiased}: the time-series average of $(RF - AE)$ is close to zero and statistically insignificant at all horizons, while $(AF - AE)$ is positive and significant---analysts systematically over-forecast. (2)~To show that the \textbf{ML forecast is more accurate}: the mean squared errors $(RF-AE)^2$ are smaller than $(AF-AE)^2$. (3)~To document the \textbf{real-time conditional bias} $(AF-RF)/P$: its significance confirms that analysts deviate from the ML benchmark in a systematic way that can be used in the cross-section (e.g., for return predictability and issuance). Replicating Table~2 is therefore central to validating the paper's benchmark and the existence of conditional biases.
 
 \textbf{Figure~1 (Partial dependence of realized EPS on analysts' forecasts).} The figure plots the partial dependence of the RF-predicted \emph{realized} EPS on the (standardized) consensus analyst forecast for the one-quarter-ahead horizon. It serves to \textbf{motivate the use of non-linear methods}: the paper argues that ``EPS is a non-linear function of analysts' forecasts'' (Section~2), so that linear predictions produce substantial errors. The S-shaped curve---flattening at high analyst forecasts---is consistent with analysts being overly optimistic when they forecast high; the RF corrects for this by predicting a smaller increase in actual EPS. Replicating Figure~1 supports the methodological choice of random forests over linear models and illustrates how the benchmark incorporates analysts' information while correcting for conditional bias.
+"""
 
+data_sources = r"""
 \section{Data Sources}
 
 \textbf{WRDS / IBES.} Consensus analyst earnings forecasts and actual reported EPS from IBES (\texttt{ibes.statsum\_epsus}), US firms, forecast-period indicators for quarterly and annual horizons. Sample starts January 1985.
@@ -48,11 +194,16 @@ The paper then uses this benchmark to show that analysts are, on average, \textb
 \textbf{WRDS / Financial Ratios.} Firm-level accounting features from \texttt{wrdsapps\_finratio\_ibes.firm\_ratio\_ibes}. Missing values imputed with within-period, within-industry medians (Fama--French 49) and forward-filled by firm.
 
 \textbf{Philadelphia Fed.} Real-time macro data: real GDP, industrial production, real personal consumption, unemployment. Log growth rates and levels merged into the panel with an as-of backward merge on the estimate date to avoid look-ahead bias.
+"""
 
+results_intro = r"""
 \section{Results}
 
 We present the paper's Figure~1 and Table~2 alongside our replication for direct comparison.
+"""
 
+# %%
+comparison_figure1 = r"""
 \subsection{Figure 1: Partial Dependence (Original vs.\ Replication)}
 
 The figure below shows the original Figure~1 from van Binsbergen, Han, and Lopez-Lira (2022) above and our replication below. Both plots depict the partial dependence of one-quarter-ahead realized EPS on analysts' forecasts. The replication reproduces the S-shaped, non-linear relationship and the flattening at high forecast levels; small differences may arise because the dataset used in the replication is not exactly identical to that used in the original paper.
@@ -75,20 +226,10 @@ The figure below shows the original Figure~1 from van Binsbergen, Han, and Lopez
   \caption{EPS as a non-linear function of analysts' forecasts---original vs.\ replication (vertical layout).}
   \label{fig:comparison_pdp}
 \end{figure}
+"""
 
-\subsection{Table 2: Term Structure (Original vs.\ Replication)}
-
-Both tables use the same column definitions; comparing them row by row shows alignment in sign and magnitude, with differences attributable to sample period (paper: Jan.\ 1986--Dec.\ 2019) and data vintage.
-
-\textbf{Original (from paper):}
-\begin{table}[H]
-\centering
-\caption{Original Table~2 from the paper (term structure of earnings forecasts).}
-\label{tab:original_table2}
-\small
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lccccccccc}
-
+# Original Table 2 from the paper (van Binsbergen, Han, Lopez-Lira 2022), same layout for easy comparison
+table2_original_latex = r"""
 \toprule
 Horizon & RF & AF & AE & (RF-AE) & (AF-AE) & (RF-AE)$^2$ & (AF-AE)$^2$ & (AF-RF)/P & N \\
 \midrule
@@ -103,7 +244,22 @@ One-year-ahead & 1.194 & 1.320 & 1.167 & 0.027 & 0.154 & 0.670 & 0.686 & 0.021 &
 Two-years-ahead & 1.384 & 1.771 & 1.387 & $-$0.004 & 0.384 & 1.897 & 2.009 & 0.035 & 1,097,098 \\
 \textit{t-stat} &  &  &  & $-$0.07 & 8.33 &  &  & 6.57 &  \\
 \bottomrule
+"""
 
+comparison_table2 = r"""
+\subsection{Table 2: Term Structure (Original vs.\ Replication)}
+
+Both tables use the same column definitions; comparing them row by row shows alignment in sign and magnitude, with differences attributable to sample period (paper: Jan.\ 1986--Dec.\ 2019) and data vintage.
+
+\textbf{Original (from paper):}
+\begin{table}[H]
+\centering
+\caption{Original Table~2 from the paper (term structure of earnings forecasts).}
+\label{tab:original_table2}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccc}
+""" + table2_original_latex + r"""
 \end{tabular}%
 }
 \end{table}
@@ -116,25 +272,13 @@ Two-years-ahead & 1.384 & 1.771 & 1.387 & $-$0.004 & 0.384 & 1.897 & 2.009 & 0.0
 \small
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lccccccccc}
-\toprule
-Horizon & RF & AF & AE & (RF-AE) & (AF-AE) & (RF-AE)$^2$ & (AF-AE)$^2$ & (AF-RF)/P & N \\
-\midrule
-One-quarter-ahead & 0.246 & 0.268 & 0.249 & -0.003 & 0.019 & 0.565 & 0.1 & -0.019 & 881903.0 \\
-\textit{t-stat} &  &  &  & -1.64 & 6.16 &  &  & -13.92 &  \\
-Two-quarters-ahead & 0.261 & 0.304 & 0.263 & -0.003 & 0.041 & 0.551 & 0.13 & -0.014 & 808189.0 \\
-\textit{t-stat} &  &  &  & -0.86 & 10.62 &  &  & -12.29 &  \\
-Three-quarters-ahead & 0.276 & 0.332 & 0.277 & -0.001 & 0.055 & 0.563 & 0.164 & -0.011 & 744857.0 \\
-\textit{t-stat} &  &  &  & -0.18 & 10.9 &  &  & -10.88 &  \\
-One-year-ahead & 0.986 & 1.078 & 0.99 & -0.005 & 0.088 & 4.655 & 0.472 & -0.064 & 871504.0 \\
-\textit{t-stat} &  &  &  & -0.62 & 6.09 &  &  & -9.54 &  \\
-Two-years-ahead & 1.159 & 1.381 & 1.15 & 0.01 & 0.232 & 4.894 & 1.419 & -0.04 & 739930.0 \\
-\textit{t-stat} &  &  &  & 0.39 & 6.94 &  &  & -7.13 &  \\
-\bottomrule
-
+""" + table2_latex + "\n" + r"""
 \end{tabular}%
 }
 \end{table}
+"""
 
+successes_challenges = r"""
 \section{Replication Results Analysis and Challenges}
 
 This section evaluates how well the replication reproduces the paper's Table~2 and Figure~1, summarizes what was and was not replicated, and discusses possible reasons and next steps for investigation.
@@ -199,7 +343,27 @@ Figure 2 plots the time-series of RF prediction, analyst forecast, and actual va
 \subsection{Practical Challenges}
 
 Rolling-window RF training across five horizons is computationally intensive. Some data-cleaning details in the paper are under-specified (e.g., exact adjustment-factor alignment, industry imputation). Resolving the \textbf{direction} of $(AF-RF)/P$ (replication negative vs.\ paper positive) and the reversal in relative accuracy $(RF-AE)^2$ vs.\ $(AF-AE)^2$ would strengthen the replication.
+"""
 
+table2_full = (
+    r"""
+\begin{table}[H]
+\centering
+\caption{Term Structure of Earnings Forecasts via Machine Learning}
+\label{tab:term_structure}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccccc}
+"""
+    + table2_latex + "\n"
+    + r"""
+\end{tabular}%
+}
+\end{table}
+"""
+)
+
+extended_section = r"""
 \section{Extended Sample: 1986 to Latest Data}
 
 We re-ran the same analysis using data from 1986 to the latest available date; outputs are in \texttt{\_output\_extended}. Below are the partial dependence figure (one-quarter-ahead) and Table~2 (term structure) from this extended sample.
@@ -218,24 +382,30 @@ We re-ran the same analysis using data from 1986 to the latest available date; o
 \small
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lccccccccc}
-\toprule
-Horizon & RF & AF & AE & (RF-AE) & (AF-AE) & (RF-AE)$^2$ & (AF-AE)$^2$ & (AF-RF)/P & N \\
-\midrule
-One-quarter-ahead & 0.278 & 0.291 & 0.28 & -0.003 & 0.01 & 0.933 & 0.125 & -0.03 & 1040127.0 \\
-\textit{t-stat} &  &  &  & -1.14 & 2.71 &  &  & -7.11 &  \\
-Two-quarters-ahead & 0.278 & 0.314 & 0.279 & -0.002 & 0.035 & 0.892 & 0.166 & -0.022 & 953629.0 \\
-\textit{t-stat} &  &  &  & -0.38 & 7.06 &  &  & -8.21 &  \\
-Three-quarters-ahead & 0.296 & 0.347 & 0.294 & 0.002 & 0.053 & 0.9 & 0.214 & -0.018 & 878017.0 \\
-\textit{t-stat} &  &  &  & 0.39 & 7.32 &  &  & -7.74 &  \\
-One-year-ahead & 1.064 & 1.142 & 1.068 & -0.004 & 0.074 & 6.075 & 0.52 & -0.079 & 989022.0 \\
-\textit{t-stat} &  &  &  & -0.54 & 4.82 &  &  & -8.23 &  \\
-Two-years-ahead & 1.22 & 1.44 & 1.221 & -0.001 & 0.219 & 5.948 & 1.55 & -0.049 & 820108.0 \\
-\textit{t-stat} &  &  &  & -0.03 & 6.55 &  &  & -6.75 &  \\
-\bottomrule
+""" + (table2_extended_latex or "\\multicolumn{10}{c}{(Extended table not available.)}\\\\n") + r"""
 \end{tabular}%
 }
 \end{table}
 
 The partial dependence plot in the extended sample exhibits the same non-linear, increasing shape as in our main replication. The term-structure table shows the same qualitative patterns: $(RF-AE)$ close to zero across horizons, $(AF-AE)$ positive (analysts above realized earnings), and $(AF-RF)/P$ with the same sign and significance as in the replication. Together, this indicates that the paper's main findings are robust to extending the sample through the latest available data.
+"""
 
-\end{document}
+# %%
+full_latex = (
+    preamble
+    + overview
+    + data_sources
+    + results_intro
+    + comparison_figure1
+    + comparison_table2
+    + successes_challenges
+    + extended_section
+    + "\n\\end{document}\n"
+)
+
+out_tex = REPORTS_DIR / "replication_report_generated.tex"
+out_tex.write_text(full_latex, encoding="utf-8")
+print(f"Written: {out_tex}")
+print("To compile: cd reports && pdflatex replication_report_generated.tex")
+
+

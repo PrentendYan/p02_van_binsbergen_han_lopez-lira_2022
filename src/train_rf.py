@@ -20,6 +20,18 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def run_train_rf():
+    """Train rolling-window RF (and OLS) models for each forecast period.
+
+    Loads macro_data.csv and period-specific processed data (A1..Q3), runs
+    train_test_rolling for each period, and writes results to
+    RESULTS_DIR/{period}_rf.csv. Skips periods whose output file already exists.
+
+    Returns
+    -------
+    dict[str, pd.DataFrame] or None
+        Mapping of period name to rolling results DataFrame; None if macro_data
+        is missing.
+    """
     periods = config("FORECAST_PERIODS")
     macro_path = Path(config("PROCESSED_DIR")) / "macro_data.csv"
     if not macro_path.exists():

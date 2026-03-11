@@ -1,7 +1,43 @@
 """
 Data engineering for Man vs Machine: IBES-CRSP link, macro processing, merge with finratio.
+
 Depends on: pipeline_load_data outputs (crsp, ibes_summary, finratio, FED CSVs).
 Outputs: DATA_DIR/ibes_crsp.csv, DATA_DIR/processed_data/macro_data.csv, A1,A2,Q1,Q2,Q3.csv
+
+Pipeline steps (data cleaning and alignment):
+────────────────────────────────────────────
+
+1) IBES–CRSP link table (WRDS)
+   - IBES: from ibes.id (usfirm=1, cusip non-empty), per (ticker, cusip) take latest sdates → fdate/ldate.
+   - CRSP: from crsp.stocknames (ncusip non-empty), per (permno, ncusip) take min(namedt), max(nameenddt).
+   - Join IBES and CRSP on cusip = ncusip; keep (ticker, permno) with max(ldate) to get one permno per IBES identity.
+   - Result: link_table [permno, ncusip] for matching IBES to CRSP.
+
+2) IBES–CRSP panel and adjustment
+   - Load local ibes_summary.csv and crsp.csv; normalize dates (statpers, rankdate as period 'M').
+   - Align IBES to CRSP: merge IBES with link_table on cusip, then with CRSP on (permno, date=statpers) to get
+     price, ret, cfacshr at estimate date → cfacshr_estdate.
+   - Align to report date: merge again with CRSP on (permno, date=announcement_actual_eps) for cfacshr at report date
+     → cfacshr_reportdate. Compute adjust_factor = cfacshr_estdate / cfacshr_reportdate, adj_actual = actual * adjust_factor.
+   - Past EPS: group by (ticker, fpi_group), merge_asof on announcement_actual_eps (backward) to attach adj_past_eps
+     and announcement_past_ep. fpi_group: 6,7,8→'678', 1,2→'12'.
+   - Column cleanup: drop actual, cfacshr_estdate/reportdate; save as ibes_crsp.csv.
+
+3) Macro data
+   - Load FED CSVs: real_GDP_FED, IPT_FED (skip/filter rows), real_personal_consumption_FED, Unemployment (skip rows).
+   - PrepareMacro(): for each series, walk (Begin_Year, Begin_Month) forward, build Dates + value per month; handle NaNs.
+   - Unemployment: take first non-NaN per row from raw array → Unempl_Data with Dates (normalized to YYYY-MM).
+   - Log returns: GDP, Cons, IPT → log(x_t / x_{t-1}), dropna.
+   - Outer merge all macro series on Dates → macro_data.csv (GDP_log_return, Cons_log_return, IPT_log_return, Unempl, Dates).
+
+4) Finratio and final forecast panels
+   - Load finratio.csv; drop selected columns (peg*, pe_op*, price, ret_crsp, identifiers/industry text).
+   - public_date to datetime; drop gvkey, adate, qdate, ticker, cusip, ff* and sector columns.
+   - Fill NaNs: by (public_date, ffi49) fill with group median; by permno ffill/bfill; again by (public_date, ffi49) median.
+   - Align to IBES: merge_asof(IBES_CRSP by statpers, finratio by public_date, by=permno, direction='backward')
+     so each forecast row gets the latest available finratio as of statpers.
+   - Split by fpi: A1 (fpi=1), A2 (fpi=2), Q1 (6), Q2 (7), Q3 (8). Drop rows with missing adj_actual, meanest, adj_past_eps.
+   - Sort by (permno, rankdate), save A1.csv … Q3.csv to processed_data/.
 """
 import sys
 from pathlib import Path
@@ -44,6 +80,7 @@ def run_data_engineering(use_wrds=True):
         db = None
 
     # ---- 1) IBES-CRSP link table from WRDS ----
+    #(permno, ncusip)
     if db is not None:
         _ibes1 = db.raw_sql("""
             select ticker, cusip, cname, sdates

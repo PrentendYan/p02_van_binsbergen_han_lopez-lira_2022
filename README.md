@@ -30,8 +30,12 @@ that persists throughout the term structure.
 .
 ├── dodo.py                      # doit task runner (pipeline DAG)
 ├── requirements.txt             # Python dependencies
+├── .env.example                 # Template for .env (WRDS credentials, path overrides)
 ├── .env                         # local path overrides + WRDS credentials (not tracked)
+├── .cruft.json                  # cookiecutter chartbook template metadata
 ├── chartbook.toml               # chartbook/docs configuration
+├── PIPELINE.md                  # Pipeline documentation (DAG, steps, configuration)
+├── REPLICATION_CHECKLIST.md     # Grading checklist for the replication project
 │
 ├── src/                         # all pipeline scripts
 │   ├── settings.py              # centralised config (paths, dates, RF params)
@@ -45,7 +49,8 @@ that persists throughout the term structure.
 │   ├── partial_dependence.py    # Partial dependence plot (meanest -> realized EPS)
 │   ├── table2_term_structure.py # Table 2: RF, AF, AE means and Newey-West t-stats
 │   ├── summary_stats.py         # Summary tables + figures for the replication report
-│   └── run_extended.py          # Extended-sample variant runner
+│   ├── run_extended.py          # Extended-sample variant runner
+│   └── generate_replication_latex.ipynb  # Notebook to generate LaTeX report programmatically
 │
 ├── notebooks/
 │   ├── code_walkthrough.ipynb   # Main walkthrough notebook (data + analysis)
@@ -54,6 +59,10 @@ that persists throughout the term structure.
 │   ├── data_engineering.ipynb   # Data engineering steps
 │   ├── stat_analysis_results.ipynb  # Statistical analysis results
 │   └── partial_dependence_plot.ipynb # Partial dependence visualisation
+│
+├── tests/                       # Unit tests
+│   ├── conftest.py              # Shared fixtures (project_root, images_dir, pdp_png)
+│   └── test_partial_dependence.py  # Tests for Figure 1 (PDP curve properties)
 │
 ├── _data/                       # Raw and processed data (gitignored, reproducible)
 │   ├── crsp.csv                 # CRSP monthly returns + prices
@@ -87,17 +96,12 @@ that persists throughout the term structure.
 ├── _output_extended/            # Same structure for extended-sample run
 │
 ├── reports/
-│   ├── replication_report.tex   # Main LaTeX replication report
-│   ├── replication_report.pdf   # Compiled report (26 pages)
-│   ├── bibliography.bib         # BibTeX references
-│   ├── my_article_header.sty    # Custom article style
-│   └── my_common_header.sty     # Shared LaTeX macros
-│
-├── data_manual/
-│   └── data_README.md           # Documentation for any manually curated data
+│   ├── replication_report_generated.tex  # Auto-generated LaTeX replication report
+│   └── replication_report.pdf   # Compiled report (26 pages, gitignored)
 │
 ├── assets/
-│   └── logo.png                 # Static assets for documentation
+│   ├── figure1.png              # Original Figure 1 from the paper (for comparison)
+│   └── table2.png               # Original Table 2 from the paper (for comparison)
 │
 └── docs/                        # Built Sphinx/jupyter-book documentation (GitHub Pages)
 ```
@@ -452,13 +456,11 @@ python3 src/summary_stats.py
 
 ```bash
 cd reports
-/usr/local/texlive/2025/bin/universal-darwin/pdflatex replication_report.tex
-/usr/local/texlive/2025/bin/universal-darwin/bibtex replication_report
-/usr/local/texlive/2025/bin/universal-darwin/pdflatex replication_report.tex
-/usr/local/texlive/2025/bin/universal-darwin/pdflatex replication_report.tex
+/usr/local/texlive/2025/bin/universal-darwin/pdflatex replication_report_generated.tex
+/usr/local/texlive/2025/bin/universal-darwin/pdflatex replication_report_generated.tex
 ```
 
-Output: `reports/replication_report.pdf` (26 pages).
+Output: `reports/replication_report_generated.pdf`.
 
 ### 7. Run tests
 

@@ -1,0 +1,329 @@
+Summary for Q1 (post_regulation only):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.351
+Model:                            OLS   Adj. R-squared (uncentered):              0.351
+Method:                 Least Squares   F-statistic:                          1.873e+05
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:16   Log-Likelihood:                          43709.
+No. Observations:             1040127   AIC:                                 -8.741e+04
+Df Residuals:                 1040124   BIC:                                 -8.738e+04
+Df Model:                           3                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9916      0.001    720.159      0.000       0.989       0.994
+beta_t              0.2499      0.007     34.164      0.000       0.236       0.264
+post_regulation     0.0087      0.000     20.879      0.000       0.008       0.009
+==============================================================================
+Omnibus:                  2211271.149   Durbin-Watson:                   2.001
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):     103024790089.200
+Skew:                         -17.721   Prob(JB):                         0.00
+Kurtosis:                    1544.411   Cond. No.                         26.6
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+Hypothesis tests for Q1:
+gamma (post_regulation) coefficient: 0.008679889471249024, p-value: 8.737137659379044e-97
+Is gamma significant? Yes
+
+Summary for Q1 (+ N_analyst):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.351
+Model:                            OLS   Adj. R-squared (uncentered):              0.351
+Method:                 Least Squares   F-statistic:                          1.406e+05
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:16   Log-Likelihood:                          43923.
+No. Observations:             1040127   AIC:                                 -8.784e+04
+Df Residuals:                 1040123   BIC:                                 -8.779e+04
+Df Model:                           4                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9889      0.001    715.171      0.000       0.986       0.992
+beta_t              0.2594      0.007     35.395      0.000       0.245       0.274
+N_analyst           0.0007   3.54e-05     20.657      0.000       0.001       0.001
+post_regulation     0.0033      0.000      6.682      0.000       0.002       0.004
+==============================================================================
+Omnibus:                  2211057.762   Durbin-Watson:                   2.001
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):     103175308703.886
+Skew:                         -17.716   Prob(JB):                         0.00
+Kurtosis:                    1545.538   Cond. No.                         294.
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+gamma (post_regulation) p-value: 2.3627604771596153e-11, lambda (N_analyst) p-value: 8.845005123888081e-95
+Is gamma significant? Yes
+Is lambda significant? Yes
+
+Summary for Q2 (post_regulation only):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.384
+Model:                            OLS   Adj. R-squared (uncentered):              0.384
+Method:                 Least Squares   F-statistic:                          1.979e+05
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:16   Log-Likelihood:                      2.5052e+05
+No. Observations:              953629   AIC:                                 -5.010e+05
+Df Residuals:                  953626   BIC:                                 -5.010e+05
+Df Model:                           3                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9929      0.001    742.478      0.000       0.990       0.996
+beta_t              0.2312      0.007     31.436      0.000       0.217       0.246
+post_regulation     0.0068      0.000     20.072      0.000       0.006       0.008
+==============================================================================
+Omnibus:                  2322574.207   Durbin-Watson:                   1.993
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):     324487335178.754
+Skew:                         -24.637   Prob(JB):                         0.00
+Kurtosis:                    2860.263   Cond. No.                         32.4
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+Hypothesis tests for Q2:
+gamma (post_regulation) coefficient: 0.006847763652674997, p-value: 1.3552158596596757e-89
+Is gamma significant? Yes
+
+Summary for Q2 (+ N_analyst):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.384
+Model:                            OLS   Adj. R-squared (uncentered):              0.384
+Method:                 Least Squares   F-statistic:                          1.486e+05
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:16   Log-Likelihood:                      2.5070e+05
+No. Observations:              953629   AIC:                                 -5.014e+05
+Df Residuals:                  953625   BIC:                                 -5.013e+05
+Df Model:                           4                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9905      0.001    737.124      0.000       0.988       0.993
+beta_t              0.2409      0.007     32.667      0.000       0.226       0.255
+N_analyst           0.0006   3.33e-05     18.468      0.000       0.001       0.001
+post_regulation     0.0027      0.000      6.692      0.000       0.002       0.004
+==============================================================================
+Omnibus:                  2323359.689   Durbin-Watson:                   1.993
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):     325767596115.490
+Skew:                         -24.657   Prob(JB):                         0.00
+Kurtosis:                    2865.895   Cond. No.                         322.
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+gamma (post_regulation) p-value: 2.197711094733683e-11, lambda (N_analyst) p-value: 3.887379942194964e-76
+Is gamma significant? Yes
+Is lambda significant? Yes
+
+Summary for Q3 (post_regulation only):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.374
+Model:                            OLS   Adj. R-squared (uncentered):              0.374
+Method:                 Least Squares   F-statistic:                          1.747e+05
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:16   Log-Likelihood:                      3.5315e+05
+No. Observations:              878017   AIC:                                 -7.063e+05
+Df Residuals:                  878014   BIC:                                 -7.063e+05
+Df Model:                           3                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9926      0.001    695.795      0.000       0.990       0.995
+beta_t              0.2311      0.007     30.922      0.000       0.216       0.246
+post_regulation     0.0061      0.000     20.158      0.000       0.005       0.007
+==============================================================================
+Omnibus:                  2507671.958   Durbin-Watson:                   1.998
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):    1795541779238.171
+Skew:                         -37.253   Prob(JB):                         0.00
+Kurtosis:                    7008.310   Cond. No.                         36.8
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+Hypothesis tests for Q3:
+gamma (post_regulation) coefficient: 0.006061338964199677, p-value: 2.404011085227011e-90
+Is gamma significant? Yes
+
+Summary for Q3 (+ N_analyst):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.374
+Model:                            OLS   Adj. R-squared (uncentered):              0.374
+Method:                 Least Squares   F-statistic:                          1.311e+05
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:17   Log-Likelihood:                      3.5329e+05
+No. Observations:              878017   AIC:                                 -7.066e+05
+Df Residuals:                  878013   BIC:                                 -7.065e+05
+Df Model:                           4                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9901      0.001    690.381      0.000       0.987       0.993
+beta_t              0.2410      0.007     32.157      0.000       0.226       0.256
+N_analyst           0.0005   3.24e-05     16.683      0.000       0.000       0.001
+post_regulation     0.0028      0.000      7.768      0.000       0.002       0.003
+==============================================================================
+Omnibus:                  2509327.311   Durbin-Watson:                   1.999
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):    1804022730255.356
+Skew:                         -37.321   Prob(JB):                         0.00
+Kurtosis:                    7024.835   Cond. No.                         335.
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+gamma (post_regulation) p-value: 7.980007769839883e-15, lambda (N_analyst) p-value: 1.7673455250172277e-62
+Is gamma significant? Yes
+Is lambda significant? Yes
+
+Summary for A1 (post_regulation only):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.250
+Model:                            OLS   Adj. R-squared (uncentered):              0.250
+Method:                 Least Squares   F-statistic:                          1.098e+05
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:17   Log-Likelihood:                     -7.2669e+05
+No. Observations:              989022   AIC:                                  1.453e+06
+Df Residuals:                  989019   BIC:                                  1.453e+06
+Df Model:                           3                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9890      0.002    537.442      0.000       0.985       0.993
+beta_t              0.3150      0.010     31.192      0.000       0.295       0.335
+post_regulation     0.0295      0.001     23.039      0.000       0.027       0.032
+==============================================================================
+Omnibus:                  2980119.346   Durbin-Watson:                   1.994
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):    3573671587603.875
+Skew:                         -43.184   Prob(JB):                         0.00
+Kurtosis:                    9314.964   Cond. No.                         16.2
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+Hypothesis tests for A1:
+gamma (post_regulation) coefficient: 0.029511202363180618, p-value: 2.0284592576844772e-117
+Is gamma significant? Yes
+
+Summary for A1 (+ N_analyst):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.250
+Model:                            OLS   Adj. R-squared (uncentered):              0.250
+Method:                 Least Squares   F-statistic:                          8.262e+04
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:17   Log-Likelihood:                     -7.2629e+05
+No. Observations:              989022   AIC:                                  1.453e+06
+Df Residuals:                  989018   BIC:                                  1.453e+06
+Df Model:                           4                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9822      0.002    529.386      0.000       0.979       0.986
+beta_t              0.3689      0.010     35.901      0.000       0.349       0.389
+N_analyst           0.0018    6.3e-05     28.106      0.000       0.002       0.002
+post_regulation     0.0204      0.001     15.458      0.000       0.018       0.023
+==============================================================================
+Omnibus:                  2980886.253   Durbin-Watson:                   1.995
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):    3584740507176.928
+Skew:                         -43.215   Prob(JB):                         0.00
+Kurtosis:                    9329.375   Cond. No.                         214.
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+gamma (post_regulation) p-value: 6.779449216257466e-54, lambda (N_analyst) p-value: 9.649780560898294e-174
+Is gamma significant? Yes
+Is lambda significant? Yes
+
+Summary for A2 (post_regulation only):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.308
+Model:                            OLS   Adj. R-squared (uncentered):              0.308
+Method:                 Least Squares   F-statistic:                          1.214e+05
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:17   Log-Likelihood:                     -1.6255e+05
+No. Observations:              820108   AIC:                                  3.251e+05
+Df Residuals:                  820105   BIC:                                  3.251e+05
+Df Model:                           3                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9938      0.002    569.261      0.000       0.990       0.997
+beta_t              0.2412      0.010     23.348      0.000       0.221       0.261
+post_regulation     0.0158      0.001     19.124      0.000       0.014       0.017
+==============================================================================
+Omnibus:                  1493450.509   Durbin-Watson:                   1.992
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):      18491236767.751
+Skew:                         -12.587   Prob(JB):                         0.00
+Kurtosis:                     738.188   Cond. No.                         25.9
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+
+Hypothesis tests for A2:
+gamma (post_regulation) coefficient: 0.015788465197339147, p-value: 1.6689813890982394e-81
+Is gamma significant? Yes
+
+Summary for A2 (+ N_analyst):
+                                 OLS Regression Results                                
+=======================================================================================
+Dep. Variable:             bias_AF_ML   R-squared (uncentered):                   0.308
+Model:                            OLS   Adj. R-squared (uncentered):              0.308
+Method:                 Least Squares   F-statistic:                          9.127e+04
+Date:                Wed, 11 Mar 2026   Prob (F-statistic):                        0.00
+Time:                        01:13:17   Log-Likelihood:                     -1.6229e+05
+No. Observations:              820108   AIC:                                  3.246e+05
+Df Residuals:                  820104   BIC:                                  3.246e+05
+Df Model:                           4                                                  
+Covariance Type:            nonrobust                                                  
+===================================================================================
+                      coef    std err          t      P>|t|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+alpha_i             0.9871      0.002    557.984      0.000       0.984       0.991
+beta_t              0.2833      0.010     26.999      0.000       0.263       0.304
+N_analyst           0.0010   4.29e-05     22.817      0.000       0.001       0.001
+post_regulation     0.0101      0.001     11.767      0.000       0.008       0.012
+==============================================================================
+Omnibus:                  1494104.203   Durbin-Watson:                   1.992
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):      18576583841.667
+Skew:                         -12.598   Prob(JB):                         0.00
+Kurtosis:                     739.884   Cond. No.                         334.
+==============================================================================
+
+Notes:
+[1] R² is computed without centering (uncentered) since the model does not contain a constant.
+[2] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+gamma (post_regulation) p-value: 5.778149167831009e-32, lambda (N_analyst) p-value: 3.3486905280517655e-115
+Is gamma significant? Yes
+Is lambda significant? Yes

@@ -28,6 +28,8 @@ from settings import config
 
 DATA_DIR = config("DATA_DIR")
 OUTPUT_DIR = config("OUTPUT_DIR")
+OUTPUT_EXTENDED = Path(OUTPUT_DIR).resolve().parent / "_output_extended"
+REPORTS_DIR = Path("reports")
 
 ##################################
 ## Man vs Machine pipeline (DAG)
@@ -219,20 +221,5 @@ def task_pipeline_table2():
         ],
         "clean": [],
     }
-
-
-def task_test():
-    """Run unit tests (pytest). Ensures replication formulas and pipeline logic are correct."""
-    return {
-        "actions": ["python -m pytest tests/ -v --tb=short"],
-        "file_dep": [
-            "./tests/test_table2_term_structure.py",
-            "./tests/test_functions.py",
-            "./tests/test_data_engineering.py",
-            "./tests/test_eda.py",
-            "./tests/test_stat_analysis.py",
-            "./tests/test_bias_analysis.py",
-            "./tests/conftest.py",
-        ],
-        "clean": [],
-    }
+    
+    

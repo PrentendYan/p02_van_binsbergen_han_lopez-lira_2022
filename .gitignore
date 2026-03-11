@@ -1,6 +1,7 @@
 # Data files
 _data/
 data/
+_data_extended/
 data_manual/*.csv
 data_manual/*.parquet
 *.parquet
@@ -14,6 +15,7 @@ data_manual/*.parquet
 
 # Generated output
 _output/
+_output_extended/
 reports/*.pdf
 *.html
 !docs/**/*.html
@@ -45,3 +47,4 @@ _build/
 
 #
 .pytest_cache/
+

@@ -19,6 +19,11 @@ reports/*.pdf
 !docs/**/*.html
 !docs/*.html
 
+# Copyrighted papers (must not be in repo)
+ssrn-3625279.pdf
+assets/man_vs_machine.pdf
+notebooks/man_vs_machine.pdf
+
 # Python / Environment
 __pycache__/
 *.pyc

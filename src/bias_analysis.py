@@ -23,14 +23,6 @@ IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def run_bias_analysis():
-    """Produce bias comparison plots: analyst forecast vs RF prediction vs actual.
-
-    For each forecast period, loads the corresponding *_rf.csv from RESULTS_DIR,
-    aggregates by date using trimmed means, and plots three series (analyst,
-    RF, actual). Saves one PDF per period to IMAGES_DIR.
-
-    Skips periods whose results file is missing. No return value.
-    """
     periods = config("FORECAST_PERIODS")
     locator = YearLocator(config("BIAS_PLOT_YEAR_LOCATOR"))
 

@@ -10,7 +10,6 @@
 \usepackage{hyperref}
 
 \newcommand{\PathToOutput}{../_output}
-\newcommand{\PathToOutputExtended}{../_output_extended}
 \newcommand{\PathToAssets}{../assets}
 
 \begin{document}
@@ -155,7 +154,7 @@ This section evaluates how well the replication reproduces the paper's Table~2 a
 \item \textbf{Sample size $N$:} Replication $N$ is about 10--20\% lower than the paper (e.g., one-quarter-ahead: 881,903 vs.\ 1,022,661), indicating a different or narrower sample.
 \end{itemize}
 
-Figure 2 plots the time-series of RF prediction, analyst forecast, and actual value for each of the five horizons (Q1--Q3, A1, A2). Visually, the RF prediction tracks the actual series more closely than the analyst forecast over much of the sample; however, in certain periods (e.g., a sharp downturn) the RF series shows large deviations from actual, which inflates $(RF-AE)^2$ even though the time-series average $(RF-AE)$ remains close to zero.
+Figure~\ref{fig:rf_af_actual_ts} plots the time-series of RF prediction, analyst forecast, and actual value for each of the five horizons (Q1--Q3, A1, A2). Visually, the RF prediction tracks the actual series more closely than the analyst forecast over much of the sample; however, in certain periods (e.g., a sharp downturn) the RF series shows large deviations from actual, which inflates $(RF-AE)^2$ even though the time-series average $(RF-AE)$ remains close to zero.
 
 \begin{figure}[H]
   \centering
@@ -195,47 +194,18 @@ Figure 2 plots the time-series of RF prediction, analyst forecast, and actual va
 \item \textbf{Curve shape:} The paper's plot shows a clearer S-shape with flattening at both low and high forecast values; our replication starts higher on the $y$-axis for low $x$ and shows less flattening at the high end. The replication uses ``Analysts' Forecasts (Standardized)'' on the $x$-axis; differences in standardization or in the set of covariates in the RF could explain the shape gap.
 \end{itemize}
 
+\subsection{Possible Reasons and Further Investigation}
+
+\textbf{Data and sample.} Align the replication sample with the paper's (e.g., Jan.\ 1986--Dec.\ 2019, same filters and definitions). Check WRDS data versions, link quality (IBES--CRSP), and any filters on firms or dates that could reduce $N$ or shift levels (RF, AF, AE).
+
+\textbf{Variable construction.} Verify the exact definitions of RF, AF, AE, and especially the price $P$ used in $(AF-RF)/P$ (e.g., timing, per-share basis, adjustment factors). Confirm that winsorization, standardization, and any horizon-specific handling match the paper or its appendix.
+
+\textbf{$(AF-RF)/P$ direction.} The replication reports $(AF-RF)/P$ \textbf{opposite in sign} to the paper (replication: negative; paper: positive). Confirm the definition of the bias measure (e.g., $(AF-RF)/P$ vs.\ $(RF-AF)/P$), the price $P$ (timing, per-share, adjustments), and that lags (3 for quarterly, 12 for annual) and the time-series unit (cross-sectional mean per date) match the paper.
+
+\textbf{Implementation and code.} Document rolling-window design (window length, re-estimation frequency), any differences in industry imputation or adjustment factors, and run sensitivity checks (e.g., alternative sample end dates, RF settings) to see how much the magnitudes and $t$-stats change.
 
 \subsection{Practical Challenges}
 
-Rolling-window RF training across five horizons is computationally intensive. Some data-cleaning details in the paper are under-specified (e.g., exact adjustment-factor alignment, industry imputation). Resolving the \textbf{direction} of $(AF-RF)/P$ (replication negative vs.\ paper positive) and the reversal in relative accuracy $(RF-AE)^2$ vs.\ $(AF-AE)^2$ would strengthen the replication.
-
-\section{Extended Sample: 1986 to Latest Data}
-
-We re-ran the same analysis using data from 1986 to the latest available date; outputs are in \texttt{\_output\_extended}. Below are the partial dependence figure (one-quarter-ahead) and Table~2 (term structure) from this extended sample.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.7\linewidth]{\PathToOutputExtended/images/partial_dependence_meanest.png}
-  \caption{Partial dependence (extended sample: 1986 to latest).}
-  \label{fig:extended_pdp}
-\end{figure}
-
-\begin{table}[H]
-\centering
-\caption{Term structure of earnings forecasts, extended sample (1986 to latest).}
-\label{tab:term_structure_extended}
-\small
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lccccccccc}
-\toprule
-Horizon & RF & AF & AE & (RF-AE) & (AF-AE) & (RF-AE)$^2$ & (AF-AE)$^2$ & (AF-RF)/P & N \\
-\midrule
-One-quarter-ahead & 0.278 & 0.291 & 0.28 & -0.003 & 0.01 & 0.933 & 0.125 & -0.03 & 1040127.0 \\
-\textit{t-stat} &  &  &  & -1.14 & 2.71 &  &  & -7.11 &  \\
-Two-quarters-ahead & 0.278 & 0.314 & 0.279 & -0.002 & 0.035 & 0.892 & 0.166 & -0.022 & 953629.0 \\
-\textit{t-stat} &  &  &  & -0.38 & 7.06 &  &  & -8.21 &  \\
-Three-quarters-ahead & 0.296 & 0.347 & 0.294 & 0.002 & 0.053 & 0.9 & 0.214 & -0.018 & 878017.0 \\
-\textit{t-stat} &  &  &  & 0.39 & 7.32 &  &  & -7.74 &  \\
-One-year-ahead & 1.064 & 1.142 & 1.068 & -0.004 & 0.074 & 6.075 & 0.52 & -0.079 & 989022.0 \\
-\textit{t-stat} &  &  &  & -0.54 & 4.82 &  &  & -8.23 &  \\
-Two-years-ahead & 1.22 & 1.44 & 1.221 & -0.001 & 0.219 & 5.948 & 1.55 & -0.049 & 820108.0 \\
-\textit{t-stat} &  &  &  & -0.03 & 6.55 &  &  & -6.75 &  \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
-
-The partial dependence plot in the extended sample exhibits the same non-linear, increasing shape as in our main replication. The term-structure table shows the same qualitative patterns: $(RF-AE)$ close to zero across horizons, $(AF-AE)$ positive (analysts above realized earnings), and $(AF-RF)/P$ with the same sign and significance as in the replication. Together, this indicates that the paper's main findings are robust to extending the sample through the latest available data.
+Data access requires an institutional WRDS subscription. Rolling-window RF training across five horizons is computationally intensive. Some data-cleaning details in the paper are under-specified (e.g., exact adjustment-factor alignment, industry imputation). Resolving the \textbf{direction} of $(AF-RF)/P$ (replication negative vs.\ paper positive) and the reversal in relative accuracy $(RF-AE)^2$ vs.\ $(AF-AE)^2$ would strengthen the replication.
 
 \end{document}

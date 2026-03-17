@@ -45,6 +45,7 @@ that persists throughout the term structure.
 │   ├── partial_dependence.py    # Partial dependence plot (meanest -> realized EPS)
 │   ├── table2_term_structure.py # Table 2: RF, AF, AE means and Newey-West t-stats
 │   ├── summary_stats.py         # Summary tables + figures for the replication report
+│   ├── generate_replication_latex.py # Build `reports/replication_report_generated.tex` from pipeline outputs
 │   └── run_extended.py          # Extended-sample variant runner
 │
 ├── notebooks/
@@ -73,33 +74,29 @@ that persists throughout the term structure.
 │   ├── stat_analysis_regulation.txt
 │   ├── table2_term_structure.csv
 │   ├── table2_term_structure.txt
-│   ├── summary_stats_table.tex  # LaTeX: descriptive stats by horizon
-│   ├── summary_stats_coverage.tex  # LaTeX: sample coverage by horizon
 │   ├── results/
 │   │   └── {Q1,Q2,Q3,A1,A2}_rf.csv  # RF predictions + panel variables
 │   └── images/
-│       ├── fig_bias_distribution.png
-│       ├── fig_sample_coverage.png
-│       ├── fig_rmse_comparison.png
 │       ├── partial_dependence_meanest.png
 │       └── {Q1,Q2,Q3,A1,A2}_RF_forecast_and_analyst_vs_actual.pdf
 │
 ├── _output_extended/            # Same structure for extended-sample run
 │
 ├── reports/
-│   ├── replication_report.tex   # Main LaTeX replication report
-│   ├── replication_report.pdf   # Compiled report (26 pages)
-│   ├── bibliography.bib         # BibTeX references
-│   ├── my_article_header.sty    # Custom article style
-│   └── my_common_header.sty     # Shared LaTeX macros
+│   ├── replication_report_generated.tex  # Auto-generated from pipeline (run generate_replication_latex.py)
+│   └── replication_report_generated.pdf   # Compiled report
 │
 ├── data_manual/
 │   └── data_README.md           # Documentation for any manually curated data
 │
-├── assets/
-│   └── logo.png                 # Static assets for documentation
+├── assets/                      # Reference figures and paper for replication report
+│   ├── figure1.png              # Original Figure 1 (partial dependence) from paper
+│   └── table2.png               # Original Table 2 (term structure) from paper
 │
-└── docs/                        # Built Sphinx/jupyter-book documentation (GitHub Pages)
+├── tests/                       # Unit tests (some conditional on pipeline outputs)
+│   ├── README.md                # What is tested + how to run
+│   ├── conftest.py              # Shared fixtures (paths, sample data helpers)
+│   └── test_*.py                # Focused tests for key replication components
 ```
 
 ---
@@ -111,30 +108,34 @@ that persists throughout the term structure.
 All paths, dates, and hyperparameters are defined here and consumed by every other script
 via `from settings import config`. Variables can be overridden at three levels (highest priority first):
 
-| Priority | Method | Example |
-|----------|--------|---------|
-| 1 | CLI argument | `python train_rf.py --OUTPUT_DIR=/my/path` |
-| 2 | Environment variable / `.env` | `OUTPUT_DIR=/my/path` in `.env` |
-| 3 | `settings.py` defaults | hardcoded defaults in `defaults` dict |
+
+| Priority | Method                        | Example                                    |
+| -------- | ----------------------------- | ------------------------------------------ |
+| 1        | CLI argument                  | `python train_rf.py --OUTPUT_DIR=/my/path` |
+| 2        | Environment variable / `.env` | `OUTPUT_DIR=/my/path` in `.env`            |
+| 3        | `settings.py` defaults        | hardcoded defaults in `defaults` dict      |
+
 
 Key configuration parameters:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DATA_DIR` | `_data/` | Raw and processed data |
-| `OUTPUT_DIR` | `_output/` | All generated outputs |
-| `PROCESSED_DIR` | `_data/processed_data/` | Per-horizon CSV panels |
-| `RESULTS_DIR` | `_output/results/` | RF prediction CSVs |
-| `IMAGES_DIR` | `_output/images/` | Generated figures |
-| `FORECAST_PERIODS` | `[Q1,Q2,Q3,A1,A2]` | Five forecast horizons |
-| `ROLLING_TRAIN_LENGTH` | `11` (years) | Rolling window for Q1–A1 |
-| `ROLLING_TRAIN_LENGTH_A2` | `23` (years) | Rolling window for A2 |
-| `ROLLING_N_LOOPS` | `408` | Monthly out-of-sample windows |
-| `RF_N_ESTIMATORS` | `2000` | Trees per forest |
-| `RF_MAX_DEPTH` | `7` | Maximum tree depth |
-| `RF_MAX_SAMPLES` | `0.01` | 1% row subsample per tree |
-| `RF_MIN_SAMPLES_LEAF` | `5` | Minimum leaf size |
-| `POST_REGULATION_DATE` | `2000-10` | Regulation FD cutoff |
+
+| Variable                  | Default                 | Description                   |
+| ------------------------- | ----------------------- | ----------------------------- |
+| `DATA_DIR`                | `_data/`                | Raw and processed data        |
+| `OUTPUT_DIR`              | `_output/`              | All generated outputs         |
+| `PROCESSED_DIR`           | `_data/processed_data/` | Per-horizon CSV panels        |
+| `RESULTS_DIR`             | `_output/results/`      | RF prediction CSVs            |
+| `IMAGES_DIR`              | `_output/images/`       | Generated figures             |
+| `FORECAST_PERIODS`        | `[Q1,Q2,Q3,A1,A2]`      | Five forecast horizons        |
+| `ROLLING_TRAIN_LENGTH`    | `11` (years)            | Rolling window for Q1–A1      |
+| `ROLLING_TRAIN_LENGTH_A2` | `23` (years)            | Rolling window for A2         |
+| `ROLLING_N_LOOPS`         | `408`                   | Monthly out-of-sample windows |
+| `RF_N_ESTIMATORS`         | `2000`                  | Trees per forest              |
+| `RF_MAX_DEPTH`            | `7`                     | Maximum tree depth            |
+| `RF_MAX_SAMPLES`          | `0.01`                  | 1% row subsample per tree     |
+| `RF_MIN_SAMPLES_LEAF`     | `5`                     | Minimum leaf size             |
+| `POST_REGULATION_DATE`    | `2000-10`               | Regulation FD cutoff          |
+
 
 ---
 
@@ -143,13 +144,13 @@ Key configuration parameters:
 Pulls four data sources and saves them to `_data/`:
 
 - **CRSP** (`crsp.csv`): Monthly stock returns, prices, and cumulative adjustment factors
-  (`cfacshr`) via WRDS. Used for price scaling and split-adjustment.
+(`cfacshr`) via WRDS. Used for price scaling and split-adjustment.
 - **IBES Summary** (`ibes_summary.csv`): Consensus mean analyst forecasts (`meanest`),
-  actual EPS, number of estimates, fiscal period end dates.
+actual EPS, number of estimates, fiscal period end dates.
 - **Compustat Financial Ratios** (`finratio.csv`): ~60 firm-level accounting ratios
-  (leverage, profitability, liquidity, valuation) used as RF features.
+(leverage, profitability, liquidity, valuation) used as RF features.
 - **Philadelphia FED Real-Time Vintages**: Four macro series downloaded as CSV —
-  real GDP, industrial production, real personal consumption, unemployment.
+real GDP, industrial production, real personal consumption, unemployment.
 
 > **Requires:** `WRDS_USERNAME` and `WRDS_PASSWORD` in `.env`.
 
@@ -160,24 +161,17 @@ Pulls four data sources and saves them to `_data/`:
 Three major operations:
 
 1. **IBES–CRSP Link via CUSIP.** Matches IBES tickers to CRSP PERMNOs through 8-digit CUSIP,
-   enforcing a date-range overlap filter to avoid stale links after mergers or ticker reuse.
-
+  enforcing a date-range overlap filter to avoid stale links after mergers or ticker reuse.
 2. **Split-Adjusted EPS.** When a stock split occurs between the analyst estimate date and the
-   earnings announcement date, raw IBES EPS figures are on different per-share bases. The
+  earnings announcement date, raw IBES EPS figures are on different per-share bases. The
    adjustment is:
-
-   ```
-   adj_actual = actual × (cfacshr_estimate_date / cfacshr_announcement_date)
-   ```
-
 3. **Macro Merge (no look-ahead).** Philadelphia FED real-time vintages are merged with
-   `merge_asof(..., direction='backward')` on the estimate date, so only data released
+  `merge_asof(..., direction='backward')` on the estimate date, so only data released
    *before* the forecast date is used.
-
 4. **Three-Pass Financial Ratio Imputation.**
-   - Pass 1: Fill missing values with same-month industry median (Fama-French 49-industry).
-   - Pass 2: Forward/backward fill within firm.
-   - Pass 3: Remaining gaps filled with industry median again.
+  - Pass 1: Fill missing values with same-month industry median (Fama-French 49-industry).
+  - Pass 2: Forward/backward fill within firm.
+  - Pass 3: Remaining gaps filled with industry median again.
    After three passes, zero missing values remain in the financial ratio columns.
 
 **Outputs:** `_data/ibes_crsp.csv`, `_data/processed_data/macro_data.csv`,
@@ -189,14 +183,14 @@ Three major operations:
 
 Contains functions used by multiple pipeline scripts:
 
-- **`PrepareMacro()`**: Loads Philadelphia FED CSV files, computes log returns for GDP /
-  industrial production / consumption, and returns a single macro DataFrame.
-- **`read_merge_prepare_data(period)`**: Loads the processed panel for one horizon,
-  merges macro data via backward `merge_asof`, winsorises extreme EPS values at the 10th
-  percentile, and returns a cleaned DataFrame ready for the rolling-window loop.
-- **`train_test_rolling(df, ...)`**: Implements the rolling-window evaluation loop.
-  For each month `t`, trains a `RandomForestRegressor` on `[t−W, t−1]` and predicts
-  only month `t`. A `StandardScaler` is fit on training data only (no leakage).
+- `**PrepareMacro()`**: Loads Philadelphia FED CSV files, computes log returns for GDP /
+industrial production / consumption, and returns a single macro DataFrame.
+- `**read_merge_prepare_data(period)**`: Loads the processed panel for one horizon,
+merges macro data via backward `merge_asof`, winsorises extreme EPS values at the 10th
+percentile, and returns a cleaned DataFrame ready for the rolling-window loop.
+- `**train_test_rolling(df, ...)**`: Implements the rolling-window evaluation loop.
+For each month `t`, trains a `RandomForestRegressor` on `[t−W, t−1]` and predicts
+only month `t`. A `StandardScaler` is fit on training data only (no leakage).
 
 ---
 
@@ -214,6 +208,7 @@ industrial production growth, unemployment level), and ~60 Compustat financial r
 `min_samples_leaf=5`.
 
 **Output columns** added to the panel:
+
 - `predicted_adj_actual`: RF out-of-sample prediction
 - `bias_AF_ML`: `(meanest − predicted_adj_actual) / abs(price)`
 
@@ -261,17 +256,19 @@ Trains the RF on the full Q1 sample and computes partial dependence of the predi
 
 ---
 
-### `summary_stats.py` — Report Tables and Figures
+### `summary_stats.py` — Report Tables and Figures (for early exploration; not in pipeline)
 
-Reads `_output/results/*_rf.csv` and generates all summary materials for the replication report:
+Used during early EDA to build summary materials for the replication report. **Not part of the doit pipeline.** Reads `_output/results/*_rf.csv` (and related outputs) and generates:
 
-| Output | Description |
-|--------|-------------|
-| `_output/summary_stats_table.tex` | Descriptive statistics (mean, std, percentiles) for 6 key variables × 5 horizons |
-| `_output/summary_stats_coverage.tex` | Sample coverage (obs, firms, date range, avg firms/month, avg analysts) |
-| `_output/images/fig_bias_distribution.png` | KDE of `(AF−RF)/P` by horizon |
-| `_output/images/fig_sample_coverage.png` | Unique firms per year by horizon |
-| `_output/images/fig_rmse_comparison.png` | RF vs analyst RMSE and MAE bar chart |
+
+| Output                                     | Description                                                                      |
+| ------------------------------------------ | -------------------------------------------------------------------------------- |
+| `_output/summary_stats_table.tex`          | Descriptive statistics (mean, std, percentiles) for 6 key variables × 5 horizons |
+| `_output/summary_stats_coverage.tex`       | Sample coverage (obs, firms, date range, avg firms/month, avg analysts)          |
+| `_output/images/fig_bias_distribution.png` | KDE of `(AF−RF)/P` by horizon                                                    |
+| `_output/images/fig_sample_coverage.png`   | Unique firms per year by horizon                                                 |
+| `_output/images/fig_rmse_comparison.png`   | RF vs analyst RMSE and MAE bar chart                                             |
+
 
 ---
 
@@ -302,29 +299,33 @@ pipeline_table2
 
 ### Task Summary
 
-| Task | Script | Key Inputs | Key Outputs |
-|------|--------|-----------|-------------|
-| `pipeline_load_data` | `load_data.py` | WRDS, Philadelphia FED | `_data/*.csv` |
-| `pipeline_data_engineering` | `data_engineering.py` | `_data/*.csv` | `_data/processed_data/*.csv` |
-| `pipeline_eda` | `eda.py` | `processed_data/*.csv` | `eda_forecast_summary.csv` |
-| `pipeline_train_rf` | `train_rf.py` | `processed_data/*.csv` | `results/*_rf.csv` |
-| `pipeline_stat_analysis` | `stat_analysis.py` | `results/*_rf.csv` | `stat_analysis_regulation.txt` |
-| `pipeline_partial_dependence` | `partial_dependence.py` | `processed_data/Q1.csv` | `partial_dependence_meanest.png` |
-| `pipeline_bias_analysis` | `bias_analysis.py` | `results/*_rf.csv` | `*_RF_forecast_and_analyst_vs_actual.pdf` |
-| `pipeline_table2` | `table2_term_structure.py` | `results/*_rf.csv` | `table2_term_structure.{csv,txt}` |
+
+| Task                          | Script                     | Key Inputs              | Key Outputs                               |
+| ----------------------------- | -------------------------- | ----------------------- | ----------------------------------------- |
+| `pipeline_load_data`          | `load_data.py`             | WRDS, Philadelphia FED  | `_data/*.csv`                             |
+| `pipeline_data_engineering`   | `data_engineering.py`      | `_data/*.csv`           | `_data/processed_data/*.csv`              |
+| `pipeline_eda`                | `eda.py`                   | `processed_data/*.csv`  | `eda_forecast_summary.csv`                |
+| `pipeline_train_rf`           | `train_rf.py`              | `processed_data/*.csv`  | `results/*_rf.csv`                        |
+| `pipeline_stat_analysis`      | `stat_analysis.py`         | `results/*_rf.csv`      | `stat_analysis_regulation.txt`            |
+| `pipeline_partial_dependence` | `partial_dependence.py`    | `processed_data/Q1.csv` | `partial_dependence_meanest.png`          |
+| `pipeline_bias_analysis`      | `bias_analysis.py`         | `results/*_rf.csv`      | `*_RF_forecast_and_analyst_vs_actual.pdf` |
+| `pipeline_table2`             | `table2_term_structure.py` | `results/*_rf.csv`      | `table2_term_structure.{csv,txt}`         |
+
 
 ---
 
 ## Notebooks
 
-| Notebook | Purpose |
-|----------|---------|
-| [`notebooks/code_walkthrough.ipynb`](notebooks/code_walkthrough.ipynb) | **Main walkthrough.** Introduces the three pipeline stages with code snippets, live data loading, and all key result plots. Covers data engineering, rolling-window RF design, RMSE/bias comparison across horizons, and the KDE of `(AF−RF)/P`. Intended as the primary entry point for readers new to the codebase. |
-| [`notebooks/EDA.ipynb`](notebooks/EDA.ipynb) | Exploratory analysis of the processed firm-month panel (distribution of EPS, analyst coverage, sample composition). |
-| [`notebooks/data_engineering.ipynb`](notebooks/data_engineering.ipynb) | Step-through of the IBES-CRSP link, split-adjustment logic, and macro merge. |
-| [`notebooks/RF.ipynb`](notebooks/RF.ipynb) | Experiments with Random Forest hyperparameters and feature importance. |
-| [`notebooks/stat_analysis_results.ipynb`](notebooks/stat_analysis_results.ipynb) | Interactive display of regression output and Table 2 results. |
-| [`notebooks/partial_dependence_plot.ipynb`](notebooks/partial_dependence_plot.ipynb) | Generates and annotates the partial dependence plot of the RF w.r.t. analyst consensus. |
+
+| Notebook                                                                             | Purpose                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[notebooks/code_walkthrough.ipynb](notebooks/code_walkthrough.ipynb)`               | **Main walkthrough.** Introduces the three pipeline stages with code snippets, live data loading, and all key result plots. Covers data engineering, rolling-window RF design, RMSE/bias comparison across horizons, and the KDE of `(AF−RF)/P`. Intended as the primary entry point for readers new to the codebase. |
+| `[notebooks/EDA.ipynb](notebooks/EDA.ipynb)`                                         | Exploratory analysis of the processed firm-month panel (distribution of EPS, analyst coverage, sample composition).                                                                                                                                                                                                   |
+| `[notebooks/data_engineering.ipynb](notebooks/data_engineering.ipynb)`               | Step-through of the IBES-CRSP link, split-adjustment logic, and macro merge.                                                                                                                                                                                                                                          |
+| `[notebooks/RF.ipynb](notebooks/RF.ipynb)`                                           | Experiments with Random Forest hyperparameters and feature importance.                                                                                                                                                                                                                                                |
+| `[notebooks/stat_analysis_results.ipynb](notebooks/stat_analysis_results.ipynb)`     | Interactive display of regression output and Table 2 results.                                                                                                                                                                                                                                                         |
+| `[notebooks/partial_dependence_plot.ipynb](notebooks/partial_dependence_plot.ipynb)` | Generates and annotates the partial dependence plot of the RF w.r.t. analyst consensus.                                                                                                                                                                                                                               |
+
 
 ---
 
@@ -335,36 +336,22 @@ pipeline_table2
 One file per forecast horizon. Each row is a firm-month observation in the out-of-sample
 prediction window. Key columns:
 
-| Column | Description |
-|--------|-------------|
-| `permno` | CRSP permanent security identifier |
-| `Date` | Forecast month (YYYY-MM-DD) |
-| `meanest` | Consensus mean analyst forecast (AF), $/share |
-| `adj_actual` | Split-adjusted realised EPS (AE), $/share |
-| `predicted_adj_actual` | RF out-of-sample prediction, $/share |
-| `bias_AF_ML` | `(meanest − predicted_adj_actual) / abs(price)` |
-| `numest` | Number of contributing analysts |
-| `price` | CRSP closing price (absolute value), $ |
-| `adj_past_eps` | Prior-period split-adjusted EPS |
-| `ret` | Monthly stock return |
-| `GDP_log_return`, `Cons_log_return`, `IPT_log_return` | Macro growth rates (as-of) |
-| `Unempl` | Unemployment level (as-of) |
-| ~60 Compustat columns | Financial ratios (leverage, profitability, liquidity, …) |
 
-### `summary_stats_table.tex` / `summary_stats_coverage.tex`
-
-LaTeX `tabular` fragments (no `\begin{table}` wrapper) intended for `\input{}` inside the
-report. All numbers are plain ASCII — compatible with `pdflatex` and `siunitx` S-columns.
-
-### Figure files
-
-| File | Format | Content |
-|------|--------|---------|
-| `fig_bias_distribution.png` | PNG 120 dpi | KDE of `(AF−RF)/P` for all 5 horizons |
-| `fig_sample_coverage.png` | PNG 120 dpi | Unique firms per year by horizon |
-| `fig_rmse_comparison.png` | PNG 120 dpi | RMSE and MAE bar chart (RF vs analyst) |
-| `partial_dependence_meanest.png` | PNG 100 dpi | PDP of RF prediction w.r.t. `meanest` |
-| `{period}_RF_forecast_and_analyst_vs_actual.pdf` | PDF | Rolling 12-month average time series |
+| Column                                                | Description                                              |
+| ----------------------------------------------------- | -------------------------------------------------------- |
+| `permno`                                              | CRSP permanent security identifier                       |
+| `Date`                                                | Forecast month (YYYY-MM-DD)                              |
+| `meanest`                                             | Consensus mean analyst forecast (AF), $/share            |
+| `adj_actual`                                          | Split-adjusted realised EPS (AE), $/share                |
+| `predicted_adj_actual`                                | RF out-of-sample prediction, $/share                     |
+| `bias_AF_ML`                                          | `(meanest − predicted_adj_actual) / abs(price)`          |
+| `numest`                                              | Number of contributing analysts                          |
+| `price`                                               | CRSP closing price (absolute value), $                   |
+| `adj_past_eps`                                        | Prior-period split-adjusted EPS                          |
+| `ret`                                                 | Monthly stock return                                     |
+| `GDP_log_return`, `Cons_log_return`, `IPT_log_return` | Macro growth rates (as-of)                               |
+| `Unempl`                                              | Unemployment level (as-of)                               |
+| ~60 Compustat columns                                 | Financial ratios (leverage, profitability, liquidity, …) |
 
 ---
 
@@ -442,31 +429,40 @@ doit pipeline_bias_analysis
 doit pipeline_table2
 ```
 
-### 5. Generate summary statistics and figures
+### 5. Generate summary statistics and figures (optional; early EDA, not in pipeline)
 
 ```bash
 python3 src/summary_stats.py
 ```
 
-### 6. Compile the replication report
+### 6. Generate and compile the replication report
+
+Build the replication report from pipeline outputs (narrative + tables/figures, no code), then compile to PDF:
 
 ```bash
-cd reports
-/usr/local/texlive/2025/bin/universal-darwin/pdflatex replication_report.tex
-/usr/local/texlive/2025/bin/universal-darwin/bibtex replication_report
-/usr/local/texlive/2025/bin/universal-darwin/pdflatex replication_report.tex
-/usr/local/texlive/2025/bin/universal-darwin/pdflatex replication_report.tex
+python3 src/generate_replication_latex.py
+cd reports && pdflatex replication_report_generated.tex
 ```
 
-Output: `reports/replication_report.pdf` (26 pages).
+Output: `reports/replication_report_generated.pdf`.
 
 ### 7. Run tests
 
 ```bash
-pytest --doctest-modules
+python -m pytest tests/ -v
 ```
 
+Or via `doit`:
+
+```bash
+doit test
+```
+
+Some tests are **conditional**: they skip when required pipeline outputs are missing (e.g., processed panels or `results/*_rf.csv`). Run the pipeline first for full coverage.
+
 ### 8. Code formatting
+
+Format code and fix fixable lint issues (import order, style) with Ruff:
 
 ```bash
 ruff format . && ruff check --select I --fix . && ruff check --fix .
@@ -478,20 +474,22 @@ ruff format . && ruff check --select I --fix . && ruff check --fix .
 
 ### Python packages
 
-| Package | Role |
-|---------|------|
-| `pandas`, `numpy` | Data manipulation |
-| `scikit-learn` | Random Forest, StandardScaler |
-| `statsmodels` | Panel regression, Newey-West SE |
-| `scipy` | KDE for bias distribution plots |
-| `matplotlib` | All figures |
-| `wrds` | WRDS database connection |
-| `python-decouple` | Configuration loading from `.env` |
-| `doit` | Pipeline task runner |
-| `tqdm` | Progress bars in rolling-window loop |
-| `ruff`, `black` | Code formatting and linting |
-| `pytest` | Unit and doc tests |
-| `jupyter`, `jupyterlab` | Notebook execution |
+
+| Package                 | Role                                 |
+| ----------------------- | ------------------------------------ |
+| `pandas`, `numpy`       | Data manipulation                    |
+| `scikit-learn`          | Random Forest, StandardScaler        |
+| `statsmodels`           | Panel regression, Newey-West SE      |
+| `scipy`                 | KDE for bias distribution plots      |
+| `matplotlib`            | All figures                          |
+| `wrds`                  | WRDS database connection             |
+| `python-decouple`       | Configuration loading from `.env`    |
+| `doit`                  | Pipeline task runner                 |
+| `tqdm`                  | Progress bars in rolling-window loop |
+| `ruff`, `black`         | Code formatting and linting          |
+| `pytest`                | Unit and doc tests                   |
+| `jupyter`, `jupyterlab` | Notebook execution                   |
+
 
 Install all with:
 
